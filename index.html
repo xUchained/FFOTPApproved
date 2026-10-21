@@ -133,10 +133,14 @@ function importedRow(t) {
 }
 
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&','<':'<','>':'>','"':'"',"'":'&#39;'}[c]));
-const STORAGE_KEY='financial-floor-standalone-v1';
-const WELCOME_CONFIRMED_KEY='financial-floor-profile-confirmed-v3';
+const LEGACY_STORAGE_KEY='financial-floor-standalone-v1';
+let STORAGE_KEY=LEGACY_STORAGE_KEY;
+const LEGACY_WELCOME_CONFIRMED_KEY='financial-floor-profile-confirmed-v3';
+let WELCOME_CONFIRMED_KEY=LEGACY_WELCOME_CONFIRMED_KEY;
 const THEME_KEY='financial-floor-theme';
-const FRESH_START_KEY='financial-floor-fresh-start-v2';
+const LEGACY_FRESH_START_KEY='financial-floor-fresh-start-v2';
+let FRESH_START_KEY=LEGACY_FRESH_START_KEY;
+let activeAuthUserId=null;
 const MS=[7,30,90,180];
 const DEFAULT_WALLETS=[
   {key:'feeding',name:'Feeding',icon:'utensils'},
@@ -349,7 +353,7 @@ function vActivity(){const wallets=getWallets();const start=monthStart();const m
 function reqH(r){let st=r.status,acts='';if(st==='waiting'){const left=r.releaseAt-Date.now();if(left>0)st='waiting '+(left>=36e5?Math.ceil(left/36e5)+' h':Math.ceil(left/6e4)+' min')+' more';else{st='ready for approval';acts+=`<button class="a" data-act="approved" data-id="${r.id}">Approve release</button><button data-act="denied" data-id="${r.id}">Deny</button>`}acts+=`<button data-act="cancelled" data-id="${r.id}">Cancel</button>`}return`<div class="q"><b>${N(r.amount)}</b> · ${esc(r.reason)}${r.note?' · '+esc(r.note):''}<br><span class="mu">${esc(st)} · ${when(r.createdAt)}</span><br>${acts}</div>`}
 function vGoals(){const{b,refillDue}=calc(),days=state.cfg.bareBones>0?b.floor/state.cfg.bareBones:0,next=MS.find(x=>x>days);return`<h1>Floor goals</h1><p class="mu">Each target represents days of essential living costs, using your current daily baseline of ${N(state.cfg.bareBones)}.</p>${refillDue>0?`<div class="warn">Your next ${N(refillDue)} in deposits will refill the floor first.</div>`:''}`+MS.map(d=>{const target=d*state.cfg.bareBones,pct=target?Math.min(100,Math.max(0,b.floor/target*100)):0,rem=Math.max(0,target-b.floor);return`<div class="c"><div class="row" style="justify-content:space-between;align-items:center"><b>${d}-day floor</b><span class="${days>=d?'pos':'mu'}">${days>=d?'Reached':d===next?'Next goal':'Upcoming'}</span></div><div class="dsp" style="font-size:25px;font-weight:800;margin:5px 0">${N(target)}</div><div class="bar"><i style="width:${pct}%"></i></div><span class="mu">${rem?N(rem)+' remaining':'Covered by your current floor'}</span><button class="go s" data-ms="${d}">View this goal on home</button></div>`}).join('')+`<button class="go" data-a="set">Adjust floor settings</button>`}
 function vProfile(){const p=state.profile||{};if(!isProfileComplete()||editingProfile||confirmProfileOnThisVersion){return`<h1>${editingProfile?'Edit profile':'Welcome'}</h1><p class="mu">${editingProfile?'Update your details.':'Set up your profile to get started.'}</p>
-<form id="welcomeForm"><label for="nm">Full name</label><input id="nm" required value="${esc(p.name||'')}" maxlength="60"><label for="em">Email</label><input id="em" type="email" required value="${esc(p.email||'')}"><label for="ph">Phone</label><input id="ph" required value="${esc(p.phone||'')}" maxlength="20"><label for="dob">Date of birth</label><input id="dob" type="date" required value="${esc(p.dob||'')}"><label for="st">State</label><select id="st" required><option value="">Select</option>${STATES.map(s=>`<option ${p.state===s?'selected':''}>${esc(s)}</option>`).join('')}</select><label for="ad">Address</label><textarea id="ad" required maxlength="200">${esc(p.address||'')}</textarea><label for="so">Source of income</label><select id="so" required><option value="">Select</option>${INCOME_SOURCES.map(s=>`<option ${p.sourceOfIncome===s?'selected':''}>${esc(s)}</option>`).join('')}</select><label for="sr">Salary range</label><select id="sr" required><option value="">Select</option>${SALARY_RANGES.map(s=>`<option ${p.salaryRange===s?'selected':''}>${esc(s)}</option>`).join('')}</select><label>Profile picture (optional)</label><input type="file" accept="image/*" id="pic"><img id="picPrev" class="profile-pic" style="display:${p.picture?'block':'none'}" src="${esc(p.picture||'')}"><button type="submit" class="go">Save profile</button>${editingProfile?'<button type="button" class="go s" id="cancelProfileEdit">Cancel</button>':''}</form>`}
+<form id="welcomeForm"><label for="nm">Full name</label><input id="nm" required value="${esc(p.name||'')}" maxlength="60"><label for="em">Email</label><input id="em" type="email" required readonly value="${esc(p.email||'')}"><label for="ph">Phone (optional)</label><input id="ph" value="${esc(p.phone||'')}" maxlength="20"><label for="dob">Date of birth</label><input id="dob" type="date" required value="${esc(p.dob||'')}"><label for="st">State</label><select id="st" required><option value="">Select</option>${STATES.map(s=>`<option ${p.state===s?'selected':''}>${esc(s)}</option>`).join('')}</select><label for="ad">Address</label><textarea id="ad" required maxlength="200">${esc(p.address||'')}</textarea><label for="so">Source of income</label><select id="so" required><option value="">Select</option>${INCOME_SOURCES.map(s=>`<option ${p.sourceOfIncome===s?'selected':''}>${esc(s)}</option>`).join('')}</select><label for="sr">Salary range</label><select id="sr" required><option value="">Select</option>${SALARY_RANGES.map(s=>`<option ${p.salaryRange===s?'selected':''}>${esc(s)}</option>`).join('')}</select><label>Profile picture (optional)</label><input type="file" accept="image/*" id="pic"><img id="picPrev" class="profile-pic" style="display:${p.picture?'block':'none'}" src="${esc(p.picture||'')}"><button type="submit" class="go">Save profile</button>${editingProfile?'<button type="button" class="go s" id="cancelProfileEdit">Cancel</button>':''}</form>`}
 return`<div class="top"><div class="lg">${p.picture?`<img class="avatar" src="${esc(p.picture)}" alt="">`:esc((p.name||'F')[0])}</div><div class="g"><b>${esc(p.name)}</b><small>Profile</small></div></div>
 <div class="c"><div class="theme-toggle"><span>Dark mode</span><button type="button" class="theme-switch" data-theme-toggle data-state="${theme}" role="switch" aria-checked="${theme==='dark'}" aria-label="${theme==='dark'?'Switch to light mode':'Switch to dark mode'}"><span class="switch-thumb">${ic(theme==='dark'?'moon':'sun')}</span></button></div></div>
 <div class="c"><div class="lb">Personal information</div>
@@ -363,85 +367,115 @@ return`<div class="top"><div class="lg">${p.picture?`<img class="avatar" src="${
   <button class="go s" type="button" data-edit-profile>Edit profile</button>
 </div>
 <div class="c"><div class="lb">Floor settings</div><p class="mu">Daily essentials, goal length, deposit allocation and release waiting period.</p><button class="go s" data-a="set">Open floor settings</button></div><div class="c"><div class="lb">Spenda balance check</div><p class="mu">Compare FF with the current available balance in Spenda. Reconcile differences only after checking for delayed notifications.</p><button class="go s" data-a="count">Compare with Spenda</button></div>
-<div class="c"><div class="lb">Data on this device</div><p class="mu">Your profile and financial ledger are stored in this browser. Spenda notifications are imported from Supabase; your local wallet allocations are not yet shared across devices.</p><div class="row"><button class="go s" data-a="export">Export backup</button><button class="go s" data-a="import">Import backup</button></div><button class="go s" data-a="resetbalance">Reset balances to zero</button><button class="go s" data-a="reset">Reset all app data</button></div>`}
+<div class="c"><div class="lb">Data on this device</div><p class="mu">Your profile and financial ledger are stored in this browser. Spenda notifications are imported from Supabase; your local wallet allocations are not yet shared across devices.</p><div class="row"><button class="go s" data-a="export">Export backup</button><button class="go s" data-a="import">Import backup</button></div><button class="go s" data-a="resetbalance">Reset balances to zero</button><button class="go s" data-a="reset">Reset all app data</button><button class="go danger" type="button" data-sign-out>Sign out</button></div>`}
 const V={home:vHome,wallets:vWallets,activity:vActivity,goals:vGoals,profile:vProfile};
 function icons(){try{if(window.lucide&&lucide.createIcons)lucide.createIcons()}catch(e){}}
 const MONEY_PATTERN=/₦\s*(?:[-−]\s*)?(?:\d[\d,]*(?:\.\d+)?|[•●*]{3,})/g;
 function applyBalanceVisibility(root=document.body){if(!hide||!root)return;const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let node;while((node=walker.nextNode())){const parent=node.parentElement;if(parent&&parent.closest('script,style,input,textarea,select,option,[contenteditable="true"]'))continue;const value=node.nodeValue;if(!value||!value.includes('₦'))continue;const masked=value.replace(MONEY_PATTERN,'₦ ••••••');if(masked!==value)node.nodeValue=masked}}
 
 function authScreen(){
-  const p=pendingProfile||readPendingProfile()||state.profile||{};
+  const p=pendingProfile||readPendingProfile()||{};
   const busy=authBusy?'disabled':'';
-  if(!supabaseClient)return `<div class="auth-card"><div class="lg">F</div><h1>Secure sign-in unavailable</h1><p class="mu">Financial Floor could not connect to its authentication service. Check your connection and reload. No financial screens are available until verification can be checked.</p><button class="go" type="button" id="authRetry">Try again</button></div>`;
-  if(authStage==='verify_email')return `<div class="auth-card"><div class="lg">F</div><h1>Verify your email</h1><p class="mu">Enter the one-time code sent to <b>${esc(p.email||'your email')}</b>. You must verify both your email and phone before entering Financial Floor.</p><form id="verifyEmailForm"><label for="emailOtp">Email OTP</label><input id="emailOtp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,8}" minlength="6" maxlength="8" required><button class="go" type="submit" ${busy}>Verify email</button></form><button class="go s" id="resendEmailOtp" type="button" ${busy}>Resend email code</button><button class="go s" id="restartAuth" type="button" ${busy}>Back to registration</button>${authMessage?`<p class="auth-message">${esc(authMessage)}</p>`:''}</div>`;
-  if(authStage==='verify_phone')return `<div class="auth-card"><div class="lg">F</div><h1>Verify your phone</h1><p class="mu">Enter the SMS code sent to <b>${esc(p.phone||'your phone')}</b>. Your account stays locked until this step succeeds.</p><form id="verifyPhoneForm"><label for="phoneOtp">SMS OTP</label><input id="phoneOtp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,8}" minlength="6" maxlength="8" required><button class="go" type="submit" ${busy}>Verify phone</button></form><button class="go s" id="resendPhoneOtp" type="button" ${busy}>Resend SMS code</button><button class="go s" id="restartAuth" type="button" ${busy}>Restart verification</button>${authMessage?`<p class="auth-message">${esc(authMessage)}</p>`:''}</div>`;
-  return `<div class="auth-card"><div class="lg">F</div><h1>Welcome to Financial Floor</h1><p class="mu">Create your profile, then verify your email and phone number. You cannot access the app until both codes are confirmed.</p><form id="authRegisterForm"><label for="authNm">Full name</label><input id="authNm" required maxlength="60" autocomplete="name" value="${esc(p.name||'')}"><label for="authEm">Email</label><input id="authEm" type="email" required autocomplete="email" value="${esc(p.email||'')}"><label for="authPh">Phone number</label><input id="authPh" type="tel" required autocomplete="tel" placeholder="08012345678 or +2348012345678" value="${esc(p.phone||'')}"><p class="mu">For Nigerian numbers, you can enter 080… or +234…</p><label for="authDob">Date of birth</label><input id="authDob" type="date" required value="${esc(p.dob||'')}"><label for="authSt">State</label><select id="authSt" required><option value="">Select</option>${STATES.map(s=>`<option ${p.state===s?'selected':''}>${esc(s)}</option>`).join('')}</select><label for="authAd">Address</label><textarea id="authAd" required maxlength="200">${esc(p.address||'')}</textarea><label for="authSo">Source of income</label><select id="authSo" required><option value="">Select</option>${INCOME_SOURCES.map(s=>`<option ${p.sourceOfIncome===s?'selected':''}>${esc(s)}</option>`).join('')}</select><label for="authSr">Salary range</label><select id="authSr" required><option value="">Select</option>${SALARY_RANGES.map(s=>`<option ${p.salaryRange===s?'selected':''}>${esc(s)}</option>`).join('')}</select><button class="go" type="submit" ${busy}>Send verification codes</button></form>${authMessage?`<p class="auth-message">${esc(authMessage)}</p>`:''}</div>`;
+  if(!supabaseClient)return `<div class="auth-card"><div class="lg">F</div><h1>Secure sign-in unavailable</h1><p class="mu">Financial Floor could not connect to Supabase Auth. Check the project URL and publishable key, then reload. No financial screens are available until sign-in can be verified.</p><button class="go" type="button" id="authRetry">Try again</button></div>`;
+  if(authStage==='verify_email')return `<div class="auth-card"><div class="lg">F</div><h1>Check your email</h1><p class="mu">Enter the one-time code sent to <b>${esc(p.email||'your email')}</b>. Financial Floor remains locked until the code is verified.</p><form id="verifyEmailForm"><label for="emailOtp">Email verification code</label><input id="emailOtp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,8}" minlength="6" maxlength="8" required><button class="go" type="submit" ${busy}>Verify and continue</button></form><button class="go s" id="resendEmailOtp" type="button" ${busy}>Resend email code</button><button class="go s" id="restartAuth" type="button" ${busy}>Use a different email</button>${authMessage?`<p class="auth-message">${esc(authMessage)}</p>`:''}</div>`;
+  return `<div class="auth-card"><div class="lg">F</div><h1>Welcome to Financial Floor</h1><p class="mu">Enter your name and email. We’ll send you a one-time code. New users create an account after verifying; returning users can sign in with a new code.</p><form id="authRegisterForm"><label for="authNm">Full name</label><input id="authNm" required maxlength="60" autocomplete="name" value="${esc(p.name||'')}"><label for="authEm">Email address</label><input id="authEm" type="email" required autocomplete="email" value="${esc(p.email||'')}"><button class="go" type="submit" ${busy}>Send email code</button></form>${authMessage?`<p class="auth-message">${esc(authMessage)}</p>`:''}</div>`;
+}
+function activateUserStorage(user){
+  if(!user?.id)throw new Error('Supabase did not return a valid user.');
+  const id=String(user.id);
+  const userKey=`financial-floor-standalone-v1:user:${id}`;
+  const welcomeKey=`financial-floor-profile-confirmed-v3:user:${id}`;
+  const freshKey=`financial-floor-fresh-start-v2:user:${id}`;
+  if(!localStorage.getItem(userKey)){
+    let migrated=false;
+    try{
+      const raw=localStorage.getItem(LEGACY_STORAGE_KEY);
+      if(raw&&user.email){
+        const legacy=JSON.parse(raw);
+        const owner=String(legacy?.profile?.email||'').trim().toLowerCase();
+        if(owner&&owner===String(user.email).trim().toLowerCase()){
+          localStorage.setItem(userKey,raw);
+          if(localStorage.getItem(LEGACY_WELCOME_CONFIRMED_KEY)==='1')localStorage.setItem(welcomeKey,'1');
+          migrated=true;
+        }
+      }
+    }catch(e){console.warn('Existing local data could not be migrated:',e)}
+    if(!migrated)localStorage.setItem(userKey,JSON.stringify(freshState()));
+  }
+  // This version's first-run reset applies to the legacy store only. The user-specific store
+  // is either a verified email-matched migration or a fresh state.
+  if(!localStorage.getItem(freshKey))localStorage.setItem(freshKey,'1');
+  STORAGE_KEY=userKey;WELCOME_CONFIRMED_KEY=welcomeKey;FRESH_START_KEY=freshKey;activeAuthUserId=id;
+  state=loadState();
+  confirmProfileOnThisVersion=!!state.profile?.name&&localStorage.getItem(WELCOME_CONFIRMED_KEY)!=='1';
 }
 async function bootAuth(){
   authReady=false;authStage='loading';
-  if(!supabaseClient){authReady=true;authStage='register';authMessage='Authentication service is unavailable. Configure the Supabase client before using the app.';render();return}
+  if(!supabaseClient){authReady=true;authStage='register';authMessage='Authentication service is unavailable. Check the Supabase URL and publishable key.';render();return}
   try{
     const {data,error}=await supabaseClient.auth.getSession();if(error)throw error;
     const user=data?.session?.user;
-    if(user&&user.email_confirmed_at&&user.phone_confirmed_at){
-      authStage='ready';
+    if(user&&user.email_confirmed_at){
+      activateUserStorage(user);
       const metadata=user.user_metadata||{};
-      if(!state.profile&&metadata.financial_floor_profile){state.profile=metadata.financial_floor_profile;persist()}
-      if(!state.profile?.name){authStage='register';pendingProfile=readPendingProfile()||metadata.financial_floor_profile||null}
-    }else if(user&&user.email_confirmed_at){
-      authStage='verify_phone';pendingProfile=readPendingProfile()||state.profile||user.user_metadata?.financial_floor_profile||{email:user.email,phone:user.phone||''};
+      if(!state.profile?.name){state.profile={name:metadata.name||'',email:user.email||'',phone:''};persist()}
+      else if(String(state.profile.email||'').toLowerCase()!==String(user.email||'').toLowerCase()){
+        state.profile={name:metadata.name||'',email:user.email||'',phone:''};persist();
+      }
+      authStage='ready';pendingProfile=null;
     }else{
-      authStage='register';pendingProfile=readPendingProfile()||state.profile||null;
+      const pending=readPendingProfile();
+      pendingProfile=pending||null;
+      if(pending?.email){authStage='verify_email';authMessage='Enter the code already sent to your email, or resend it.'}
+      else{authStage='register';authMessage=''}
     }
   }catch(e){authStage='register';authMessage='Could not confirm your sign-in status. Check your connection and try again.';console.error('Auth bootstrap failed:',e)}
   authReady=true;render();
 }
 async function startAuthRegistration(){
   if(authBusy)return;authMessage='';
-  const profile={name:$('#authNm').value.trim(),email:$('#authEm').value.trim().toLowerCase(),phone:normalizePhone($('#authPh').value),dob:$('#authDob').value,state:$('#authSt').value,address:$('#authAd').value.trim(),sourceOfIncome:$('#authSo').value,salaryRange:$('#authSr').value,picture:state.profile?.picture||''};
-  if(!profile.name||!profile.email||!profile.phone||!profile.dob||!profile.state||!profile.address||!profile.sourceOfIncome||!profile.salaryRange){authMessage='Please complete every required field.';render();return}
-  if(!phoneIsE164(profile.phone)){authMessage='Enter a valid international phone number, e.g. +2348012345678.';render();return}
+  const profile={name:$('#authNm').value.trim(),email:$('#authEm').value.trim().toLowerCase()};
+  if(!profile.name||!profile.email){authMessage='Enter your name and a valid email address.';render();return}
   writePendingProfile(profile);authBusy=true;render();
   try{
-    const {error}=await supabaseClient.auth.signInWithOtp({email:profile.email,options:{shouldCreateUser:true,data:{name:profile.name,phone:profile.phone,financial_floor_profile:profile}}});
-    if(error)throw error;authStage='verify_email';authMessage='A code has been sent to your email. Check your inbox and spam folder.';
-  }catch(e){authStage='register';authMessage=e.message||'Could not send the email code. Check your details and try again.'}
+    const {error}=await supabaseClient.auth.signInWithOtp({email:profile.email,options:{shouldCreateUser:true,data:{name:profile.name}}});
+    if(error)throw error;
+    authStage='verify_email';authMessage='A one-time code has been sent. Check your inbox and spam folder.';
+  }catch(e){authStage='register';authMessage=e.message||'Could not send the email code. Check the address and try again.'}
   finally{authBusy=false;render()}
 }
 async function verifyEmailOtp(){
   if(authBusy)return;authBusy=true;authMessage='';const token=$('#emailOtp').value.trim();const p=pendingProfile||readPendingProfile();render();
   try{
-    if(!p?.email)throw new Error('Your registration details are missing. Restart registration.');
+    if(!p?.email)throw new Error('Your email details are missing. Restart sign-in.');
     const {data,error}=await supabaseClient.auth.verifyOtp({email:p.email,token,type:'email'});if(error)throw error;
-    if(!data?.user)throw new Error('Email verification did not return a user. Please try again.');
-    const {error:phoneError}=await supabaseClient.auth.updateUser({phone:p.phone});if(phoneError)throw phoneError;
-    authStage='verify_phone';authMessage='Email verified. An SMS code has been sent to your phone.';
+    if(!data?.user||!data.user.email_confirmed_at)throw new Error('Supabase did not confirm the email. Please try the code again.');
+    activateUserStorage(data.user);
+    const currentEmail=String(state.profile?.email||'').trim().toLowerCase();
+    const sameUserProfile=currentEmail===String(data.user.email||p.email).trim().toLowerCase()?state.profile:{};
+    state.profile={...sameUserProfile,name:sameUserProfile.name||p.name||data.user.user_metadata?.name||'',email:data.user.email||p.email,phone:sameUserProfile.phone||''};
+    persist();clearPendingProfile();authStage='ready';authMessage='';editingProfile=false;confirmProfileOnThisVersion=false;view='home';
   }catch(e){authStage='verify_email';authMessage=e.message||'Email verification failed. Check the code and try again.'}
-  finally{authBusy=false;render()}
+  finally{authBusy=false;render();if(authStage==='ready')toast('Email verified. Welcome to Financial Floor.')}
 }
-async function resendAuthCode(kind){
+async function resendAuthCode(){
   if(authBusy)return;authBusy=true;authMessage='';render();const p=pendingProfile||readPendingProfile();
   try{
-    let result;
-    if(kind==='email')result=await supabaseClient.auth.signInWithOtp({email:p?.email,options:{shouldCreateUser:true}});
-    else result=await supabaseClient.auth.resend({type:'phone_change',phone:p?.phone});
-    if(result?.error)throw result.error;authMessage=kind==='email'?'A new email code has been sent.':'A new SMS code has been requested.';
-  }catch(e){authMessage=e.message||'Could not resend the code. Please wait and try again.'}
+    if(!p?.email)throw new Error('Enter your email address again to request a new code.');
+    const {error}=await supabaseClient.auth.signInWithOtp({email:p.email,options:{shouldCreateUser:true}});if(error)throw error;
+    authMessage='A new email code has been requested. Check your inbox and spam folder.';
+  }catch(e){authMessage=e.message||'Could not resend the code. Wait a little and try again.'}
   finally{authBusy=false;render()}
 }
-async function verifyPhoneOtp(){
-  if(authBusy)return;authBusy=true;authMessage='';const token=$('#phoneOtp').value.trim();const p=pendingProfile||readPendingProfile();render();
+async function signOutUser(){
+  if(!supabaseClient)return;
   try{
-    if(!p?.phone)throw new Error('Your phone number is missing. Restart registration.');
-    const {data,error}=await supabaseClient.auth.verifyOtp({phone:p.phone,token,type:'phone_change'});if(error)throw error;
-    const user=data?.user;if(!user?.email_confirmed_at||!user?.phone_confirmed_at)throw new Error('Both email and phone must be verified. Please try again.');
-    const {error:metaError}=await supabaseClient.auth.updateUser({data:{name:p.name,financial_floor_profile:p}});if(metaError)throw metaError;
-    state.profile=p;persist();clearPendingProfile();authStage='ready';authMessage='';editingProfile=false;confirmProfileOnThisVersion=false;view='home';
-  }catch(e){authStage='verify_phone';authMessage=e.message||'Phone verification failed. Check the code and try again.'}
-  finally{authBusy=false;render();if(authStage==='ready')toast('Email and phone verified. Welcome to Financial Floor.')}
+    const {error}=await supabaseClient.auth.signOut();if(error)throw error;
+    activeAuthUserId=null;pendingProfile=null;clearPendingProfile();authReady=true;authStage='register';authMessage='You have signed out.';authBusy=false;editingProfile=false;confirmProfileOnThisVersion=false;render();
+  }catch(e){toast(e.message||'Could not sign out. Try again.')}
 }
-function isProfileComplete(){const p=state.profile;if(!p)return false;return !!(p.name&&p.email&&p.state&&p.dob&&p.phone&&p.sourceOfIncome&&p.salaryRange&&p.address)}
-function render(){const app=$('#app'),nav=$('#nav');if(!authReady||authStage!=='ready'){nav.hidden=true;app.innerHTML=authStage==='loading'?'<div class="auth-card"><h1>Checking verification…</h1><p class="mu">Please wait while Financial Floor checks your secure session.</p></div>':authScreen();icons();applyBalanceVisibility(document.body);return}if(!isProfileComplete()||editingProfile||confirmProfileOnThisVersion){nav.hidden=true;app.innerHTML=vProfile();icons();applyBalanceVisibility(document.body);return}nav.hidden=false;nav.innerHTML=NAV.map(([k,i,l])=>`<button type="button" data-v="${k}" class="${view===k?'on':''}" aria-label="${l}">${ic(i)}<span>${l}</span></button>`).join('');app.innerHTML=V[view]?V[view]():'';icons();applyBalanceVisibility(document.body)}
+function isProfileComplete(){const p=state.profile;if(!p)return false;return !!(p.name&&p.email&&p.state&&p.dob&&p.sourceOfIncome&&p.salaryRange&&p.address)}
+function render(){const app=$('#app'),nav=$('#nav');if(!authReady||authStage!=='ready'){nav.hidden=true;app.innerHTML=authStage==='loading'?'<div class="auth-card"><h1>Checking verification…</h1><p class="mu">Please wait while Financial Floor checks your secure session.</p></div>':authScreen();icons();applyBalanceVisibility(document.body);return}if(!isProfileComplete()||editingProfile||confirmProfileOnThisVersion){nav.hidden=true;app.innerHTML=vProfile();icons();applyBalanceVisibility(document.body);return}nav.hidden=false;nav.innerHTML=NAV.map(([k,i,l])=>`<button type="button" data-v="${k}" class="${view===k?'on':''}" aria-label="${l}">${ic(i)}<span>${l}</span></button>`).join('');app.innerHTML=V[view]?V[view]() : '';icons();applyBalanceVisibility(document.body)}
 function toast(t){const el=$('#toast');el.textContent=t;el.style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.style.display='none',2800)}
 function sheet(title,html,setup){modalKind=title;$('#ov').innerHTML=`<div class="ov"><div class="sh" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="hd"><span>${esc(title)}</span><button type="button" id="cl" aria-label="Close">${ic('x')}</button></div>${html}<div class="msg" id="msg" role="status"></div></div></div>`;icons();$('#cl').onclick=closeSheet;$('.ov').onclick=e=>{if(e.target.classList.contains('ov'))closeSheet()};if(setup)setup();applyBalanceVisibility(document.body)}
 
@@ -493,8 +527,8 @@ function exportBackup(){const blob=new Blob([JSON.stringify(state,null,2)],{type
 function importBackup(){sheet('Import backup',`<p class="mu">Choose a JSON backup previously exported by Financial Floor. Importing replaces the data currently stored in this browser.</p><label for="backupFile">Backup file</label><input id="backupFile" type="file" accept="application/json,.json"><button type="button" class="go" id="go">Import data</button>`,()=>{$('#go').onclick=async()=>{try{const file=$('#backupFile').files?.[0];if(!file)throw new Error('Choose a backup file first.');const data=JSON.parse(await file.text());if(!data||!Array.isArray(data.ledger)||!Array.isArray(data.notes)||!Array.isArray(data.requests)||!data.cfg)throw new Error('This does not look like a valid Financial Floor backup.');state={...freshState(),...data,profile:data.profile||null,wallets:data.wallets||DEFAULT_WALLETS,budgets:data.budgets||{},cfg:{...DEFAULT_CFG,...data.cfg,splits:{...DEFAULT_CFG.splits,...(data.cfg.splits||{})}},ledger:data.ledger,notes:data.notes,requests:data.requests};persist();view='home';wd=null;closeSheet();render();toast('Backup imported.')}catch(e){fail(e.message)}}})}
 document.addEventListener('click',e=>{const c=s=>e.target.closest(s);let x;if(c('#eye')){hide=!hide;saveHide();render()}else if(x=c('[data-v]')){view=x.dataset.v;wd=null;render();window.scrollTo(0,0)}else if(x=c('[data-w]')){view='wallets';wd=x.dataset.w||null;render();window.scrollTo(0,0)}else if(x=c('[data-ms]')){sel=Number(x.dataset.ms);view='home';wd=null;render()}else if(x=c('[data-f]')){filt=x.dataset.f;render()}else if(c('[data-n]'))notifs();else if(x=c('[data-a]'))actionForm(x.dataset.a,x.dataset.p);else if(x=c('[data-review-tx]'))reviewImportedTransaction(x.dataset.reviewTx);else if(x=c('[data-r]')){const n=state.notes.find(n=>n.id===x.dataset.r);if(n)n.read=true;persist();notifs();render()}else if(x=c('[data-act]')){const r=state.requests.find(r=>r.id===x.dataset.id);if(!r||r.status!=='waiting')return;if(x.dataset.act==='approved'&&Date.now()<r.releaseAt){toast('This request is still within its waiting period.');return}if(x.dataset.act==='approved'&&r.amount>calc().b.floor){toast('The floor no longer has enough money to approve this request.');return}const labels={approved:'approved',denied:'denied',cancelled:'cancelled'};r.status=x.dataset.act;r.decidedAt=Date.now();if(r.status==='approved'){addLedger([{type:'release',bucket:'floor',amount:-r.amount,note:r.reason+(r.note?': '+r.note:'')}])}addNote(`Your floor release request of ${N(r.amount)} was ${labels[r.status]}.`);try{persist();render();toast(`Release request ${labels[r.status]}.`)}catch(err){toast(err.message)}}else if(c('[data-edit-profile]')){editingProfile=true;render();const input=$('#nm');if(input){input.focus();input.select()}}else if(c('[data-theme-toggle]')){theme=theme==='dark'?'light':'dark';try{localStorage.setItem(THEME_KEY,theme)}catch(err){}document.documentElement.setAttribute('data-theme',theme);render()}});
 document.addEventListener('change',e=>{if(e.target.id!=='pic')return;const input=e.target,file=input.files&&input.files[0];if(!file)return;if(file.size>1.5*1024*1024){toast('Please choose an image under 1.5 MB.');input.value='';return}const reader=new FileReader();reader.onload=()=>{const preview=$('#picPrev');if(preview){preview.src=reader.result;preview.style.display='block'}window._pendingPicture=reader.result};reader.readAsDataURL(file)});
-document.addEventListener('submit',e=>{if(e.target.id==='authRegisterForm'){e.preventDefault();void startAuthRegistration();return}if(e.target.id==='verifyEmailForm'){e.preventDefault();void verifyEmailOtp();return}if(e.target.id==='verifyPhoneForm'){e.preventDefault();void verifyPhoneOtp();return}if(e.target.id==='welcomeForm'){e.preventDefault();const name=$('#nm').value.trim();const email=$('#em').value.trim();const phone=$('#ph').value.trim();const dob=$('#dob').value;const st=$('#st').value;const address=$('#ad').value.trim();const source=$('#so').value;const salary=$('#sr').value;if(!name||!email||!phone||!dob||!st||!address||!source||!salary){toast('Please fill in all required fields.');return}const picture=window._pendingPicture||state.profile?.picture||'';state.profile={name,email,phone,dob,state:st,address,sourceOfIncome:source,salaryRange:salary,picture};try{persist();editingProfile=false;confirmProfileOnThisVersion=false;try{localStorage.setItem(WELCOME_CONFIRMED_KEY,'1')}catch(_){}delete window._pendingPicture;view='home';render();toast('Profile saved.');}catch(err){toast(err.message)}}});
-document.addEventListener('click',e=>{if(e.target.closest('#resendEmailOtp')){void resendAuthCode('email');return}if(e.target.closest('#resendPhoneOtp')){void resendAuthCode('phone');return}if(e.target.closest('#restartAuth')){authStage='register';authMessage='';authBusy=false;render();return}if(e.target.closest('#authRetry')){authMessage='';void bootAuth();return}});
+document.addEventListener('submit',e=>{if(e.target.id==='authRegisterForm'){e.preventDefault();void startAuthRegistration();return}if(e.target.id==='verifyEmailForm'){e.preventDefault();void verifyEmailOtp();return}if(e.target.id==='welcomeForm'){e.preventDefault();const name=$('#nm').value.trim();const email=supabaseClient?.auth?state.profile?.email||$('#em').value.trim():$('#em').value.trim();const phone=$('#ph').value.trim();const dob=$('#dob').value;const st=$('#st').value;const address=$('#ad').value.trim();const source=$('#so').value;const salary=$('#sr').value;if(!name||!email||!dob||!st||!address||!source||!salary){toast('Please fill in all required fields.');return}const picture=window._pendingPicture||state.profile?.picture||'';state.profile={...state.profile,name,email,phone,dob,state:st,address,sourceOfIncome:source,salaryRange:salary,picture};try{persist();editingProfile=false;confirmProfileOnThisVersion=false;try{localStorage.setItem(WELCOME_CONFIRMED_KEY,'1')}catch(_){}delete window._pendingPicture;view='home';render();toast('Profile saved.');}catch(err){toast(err.message)}}});
+document.addEventListener('click',e=>{if(e.target.closest('[data-sign-out]')){void signOutUser();return}if(e.target.closest('#resendEmailOtp')){void resendAuthCode();return}if(e.target.closest('#restartAuth')){clearPendingProfile();authStage='register';pendingProfile=null;authMessage='';authBusy=false;render();return}if(e.target.closest('#authRetry')){authMessage='';void bootAuth();return}});
 document.addEventListener('click',e=>{if(e.target.closest('#cancelProfileEdit')){editingProfile=false;confirmProfileOnThisVersion=false;delete window._pendingPicture;view='profile';render();return}});
 window.addEventListener('storage',e=>{if(e.key===STORAGE_KEY){state=loadState();render()}});
 setInterval(()=>{if(!modalKind&&state.profile?.name){render()}},60000);
