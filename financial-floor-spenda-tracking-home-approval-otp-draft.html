@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#C65316">
+<title>Financial Floor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--or:#C65316;--bo:#A83D0B;--ac:#F47738;--bg:#FFF9F4;--sf:#fff;--tx:#24211F;--mu:#78716C;--ln:#EAE1DA;--ls:#FFF0E6;--ok:#17865B;--bad:#C43C35;--warn:#E8A317;box-sizing:border-box;color-scheme:light}
+:root[data-theme="dark"]{--bg:#1A1411;--sf:#251C17;--tx:#F6EDE6;--mu:#B8A99E;--ln:#3A2D25;--ls:#33221A;--ok:#4CC38A;--bad:#F08A7F;--warn:#F0B429;color-scheme:dark}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;background:var(--bg);color:var(--tx);font:400 15px/1.45 Figtree,system-ui,sans-serif}button{font:inherit;color:inherit;cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}#app{max-width:620px;margin:0 auto;padding:14px 16px calc(100px + env(safe-area-inset-bottom,0px))}svg.lucide{width:20px;height:20px;stroke-width:1.8;vertical-align:middle}.dsp,.amt,.fd b,.tl b{font-family:"Bricolage Grotesque",system-ui,sans-serif}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--sf);border-top:1px solid var(--ln);padding-bottom:env(safe-area-inset-bottom,0px);z-index:5}nav button{flex:1;background:none;border:0;padding:9px 0 7px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;color:var(--mu)}nav button.on{color:var(--or);font-weight:700}
+@media(min-width:900px){body{padding-left:200px}#app{max-width:760px;padding-top:28px}nav{top:0;bottom:0;right:auto;width:200px;flex-direction:column;border-top:0;border-right:1px solid var(--ln);padding:24px 10px;gap:4px}nav button{flex:none;flex-direction:row;gap:10px;padding:11px 14px;font-size:15px;border-radius:12px}nav button.on{background:var(--ls)}}
+.top{display:flex;align-items:center;gap:12px;margin-bottom:14px}.g{flex:1;display:flex;flex-direction:column;line-height:1.25;min-width:0}.g small{color:var(--mu)}.lg{width:42px;height:42px;flex:none;border-radius:14px;background:var(--or);color:#fff;display:grid;place-items:center;font:800 18px "Bricolage Grotesque",sans-serif;overflow:hidden}.avatar{width:42px;height:42px;border-radius:50%;object-fit:cover;border:2.5px solid var(--or);box-shadow:0 0 0 3px var(--ls);flex:none}.ib{position:relative;width:40px;height:40px;border-radius:50%;border:1px solid var(--ln);background:var(--sf);display:grid;place-items:center}.bd{position:absolute;top:-3px;right:-3px;min-width:18px;height:18px;border-radius:9px;background:var(--bad);color:#fff;font-size:11px;display:grid;place-items:center;padding:0 4px}
+.bal{background:linear-gradient(135deg,var(--or),var(--bo));color:#fff;border-radius:18px;padding:19px;box-shadow:0 10px 28px #a83d0b20}.bal .r{display:flex;justify-content:space-between;align-items:center;opacity:.94}.bal .r button{background:none;border:0;color:#fff;padding:3px;display:grid;place-items:center}.amt{font-size:clamp(30px,8vw,38px);font-weight:800;margin:5px 0 7px;overflow-wrap:anywhere}.bal p{margin:0;font-size:14px;opacity:.94}.c{background:var(--sf);border:1px solid var(--ln);border-radius:16px;padding:16px;margin-top:14px}.lb{color:var(--mu);font-size:13px;font-weight:700;letter-spacing:.01em}.mu{color:var(--mu);font-size:14px}.fd{margin:4px 0}.fd b{font-size:32px;font-weight:800;color:var(--or)}
+.tw{position:relative;margin:20px 14px 8px}.trk{position:relative;height:10px;background:var(--ls);border-radius:9px}.trk i{display:block;height:100%;background:var(--or);border-radius:9px;transition:width .35s}.mk{position:absolute;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;border:3px solid var(--sf);background:var(--ln);padding:0;box-shadow:0 0 0 1px var(--ln)}.mk.dn{background:var(--or);box-shadow:0 0 0 1px var(--or)}.mk.ac{background:var(--sf);box-shadow:0 0 0 2px var(--ac)}.mk.sl{outline:2px solid var(--or);outline-offset:3px}.lbs{position:relative;height:22px;margin-top:12px}.lbs span{position:absolute;transform:translateX(-50%);font-size:12px;color:var(--mu);white-space:nowrap}.gl{background:var(--ls);border-radius:12px;padding:12px;margin-top:10px;font-size:14px}.gl b{font-size:16px}.bar{height:6px;background:var(--ln);border-radius:4px;margin:8px 0;overflow:hidden}.bar i{display:block;height:100%;background:var(--or);border-radius:4px;transition:width .3s}.bar.warn i{background:var(--warn)}.bar.over i{background:var(--bad)}
+.sh2{display:flex;justify-content:space-between;align-items:center;margin:22px 0 8px;gap:12px}.sh2 b{font-size:16px}.sh2 button{background:none;border:0;color:var(--or);font-size:14px;white-space:nowrap}.qa,.wg{display:grid;gap:8px;grid-template-columns:repeat(4,minmax(0,1fr))}.wg{grid-template-columns:repeat(3,minmax(0,1fr))}.qa button,.wg button{min-width:0;background:var(--sf);border:1px solid var(--ln);border-radius:14px;padding:12px 4px;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:13px;overflow-wrap:anywhere}.qa .ci,.wg .ci{width:40px;height:40px;border-radius:50%;background:var(--ls);color:var(--or);display:grid;place-items:center;flex:none}.wg b{font-family:"Bricolage Grotesque",sans-serif;font-size:16px;overflow-wrap:anywhere}.rw{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--ln);min-width:0}.rw:last-child{border-bottom:0}.rw small{color:var(--mu)}.rw .ci{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--ls);color:var(--or);flex:none}.pos{color:var(--ok)}.neg{color:var(--bad)}.warn{background:var(--ls);color:var(--bo);border-left:4px solid var(--or);padding:10px 12px;margin-top:14px;font-size:14px;border-radius:8px}h1{font:800 26px "Bricolage Grotesque",sans-serif;margin:6px 0 2px}.chips{display:flex;gap:6px;overflow-x:auto;margin:12px 0}.chips button{flex:none;border:1px solid var(--ln);background:var(--sf);border-radius:99px;padding:6px 13px;font-size:14px}.chips button.on{background:var(--or);border-color:var(--or);color:#fff}.q{padding:10px 0;border-bottom:1px solid var(--ln);font-size:14px}.q button{margin:6px 6px 0 0;padding:6px 13px;border:1px solid var(--ln);border-radius:8px;background:var(--bg)}.q button.a{background:var(--ok);border-color:var(--ok);color:#fff}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.52);display:flex;align-items:flex-end;justify-content:center;z-index:9;padding-top:30px}.sh{background:var(--sf);width:100%;max-width:560px;border-radius:20px 20px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px));max-height:92vh;overflow:auto;box-shadow:0 -12px 40px #0002}.hd{display:flex;justify-content:space-between;align-items:center;font:700 19px "Bricolage Grotesque",sans-serif;gap:12px}.hd button{background:none;border:0;display:grid;place-items:center;width:36px;height:36px;border-radius:9px}.hd button:hover{background:var(--ls)}label{display:block;font-size:14px;color:var(--mu);margin:12px 0 4px}input,select,textarea{width:100%;font:inherit;padding:11px 12px;border:1px solid var(--ln);border-radius:10px;background:var(--bg);color:var(--tx);min-width:0}input[type=checkbox]{width:auto;accent-color:var(--or)}.row{display:flex;gap:8px;min-width:0}.row>*{flex:1;min-width:0}.go{margin-top:16px;width:100%;padding:13px;border:0;border-radius:12px;background:var(--or);color:#fff;font-weight:700}.go:hover{filter:brightness(1.04)}.go.s{background:var(--ls);color:var(--or)}.go.danger{background:var(--bad);color:#fff}.msg{margin-top:10px;font-size:14px;min-height:18px}.msg.bad{color:var(--bad)}.pv{font-size:14px;color:var(--mu);margin-top:10px}.pv div{display:flex;justify-content:space-between;gap:12px;padding:2px 0}.nt{display:flex;gap:10px;padding:12px 0;border-bottom:1px solid var(--ln);width:100%;text-align:left;background:none;border-left:0;border-right:0;border-top:0;line-height:1.4}.nt.u{font-weight:700}.nt .d{width:8px;height:8px;border-radius:50%;background:var(--or);margin-top:7px;flex:none}.nt:not(.u) .d{background:transparent}#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:11px 16px;border-radius:12px;font-size:14px;z-index:10;max-width:90vw;width:max-content;display:none;box-shadow:0 6px 24px #0002}:focus-visible{outline:3px solid var(--ac);outline-offset:2px}.empty{padding:25px 12px;text-align:center;color:var(--mu)}.empty i{display:block;margin:0 auto 8px;color:var(--or)}.subtle{font-size:12px;color:var(--mu)}
+.profile-pic{width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid var(--or);margin:8px 0;display:block}
+.budget-bar{margin-top:6px}.budget-label{font-size:12px;color:var(--mu);display:flex;justify-content:space-between}
+.quick-chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.quick-chips button{background:var(--ls);border:1px solid var(--ln);border-radius:99px;padding:5px 10px;font-size:13px}
+.donut-wrap{display:flex;align-items:center;gap:16px;margin:12px 0}.donut{width:120px;height:120px;flex:none}
+.theme-toggle{display:flex;align-items:center;justify-content:space-between;padding:8px 0}
+.theme-switch{position:relative;display:block;flex:none;width:56px;height:32px;padding:3px;border:1px solid var(--ln);border-radius:999px;background:var(--bg);color:var(--tx);transition:background .2s,border-color .2s}
+.theme-switch .switch-thumb{position:absolute;top:3px;left:calc(100% - 27px);width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--or);color:#fff;box-shadow:0 1px 4px #0002;transition:left .22s cubic-bezier(.2,.8,.2,1)}
+.theme-switch[data-state="dark"] .switch-thumb{left:3px}
+.theme-switch[data-state="light"] .switch-thumb{left:calc(100% - 27px)}
+.theme-switch .lucide{width:14px;height:14px;stroke-width:2}
+ .setup-prompt,.review-prompt{background:var(--sf);border:1px solid var(--ln);border-radius:16px;padding:14px;margin-top:14px}
+.setup-prompt{border-color:var(--ac);background:var(--ls)}
+.review-prompt{border-left:4px solid var(--or);box-shadow:0 5px 18px #a83d0b0a}
+.setup-prompt p,.review-prompt p{margin:5px 0 0;font-size:14px;color:var(--mu)}
+.setup-prompt .go,.review-prompt .go{margin-top:12px}
+.review-head{display:flex;align-items:center;gap:10px}
+.review-icon{width:38px;height:38px;display:grid;place-items:center;flex:none;border-radius:12px;background:var(--ls);color:var(--or)}
+.review-head .g b{display:block}
+.review-head small{display:block;color:var(--mu);font-size:12px;margin-top:2px}
+.review-item{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--ln)}
+.review-item:last-of-type{border-bottom:0}
+.review-item .review-amount-small{font:800 17px "Bricolage Grotesque",sans-serif;color:var(--bad);white-space:nowrap}
+.review-item .review-btn{font-size:13px;padding:9px 11px}
+.alloc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}
+.alloc-field{min-width:0;padding:10px;border:1px solid var(--ln);border-radius:12px;background:var(--sf)}
+.alloc-field label{margin:0 0 5px;font-size:12px}
+.alloc-field input{padding:9px 10px}
+.alloc-help{font-size:12px;color:var(--mu);margin-top:6px}
+.allocation-preview{background:var(--ls);border-radius:12px;padding:12px;margin-top:12px}
+.allocation-preview .pvline{display:flex;justify-content:space-between;gap:12px;padding:4px 0;font-size:14px}
+.allocation-preview .pvline.total{border-top:1px solid var(--ln);margin-top:6px;padding-top:8px;font-weight:700}
+.status-pill{display:inline-flex;align-items:center;width:max-content;max-width:100%;border-radius:999px;padding:3px 8px;background:var(--ls);color:var(--bo);font-size:11px;font-weight:700;margin-top:5px}
+.status-pill.ok{background:#E6F5ED;color:#176B49}
+.status-pill.muted{background:var(--bg);color:var(--mu)}
+.import-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.import-actions button,.review-btn{border:1px solid var(--ln);border-radius:9px;background:var(--ls);color:var(--or);font-size:12px;padding:7px 10px;white-space:nowrap}.review-btn{align-self:center;flex:none}
+.review-amount{font:800 28px "Bricolage Grotesque",sans-serif;color:var(--bad);margin:8px 0}
+.warning-copy{font-size:12px;color:var(--mu);margin-top:8px}
+@media(max-width:360px){#app{padding-left:11px;padding-right:11px}.qa{gap:5px}.qa button,.wg button{font-size:12px}.qa .ci,.wg .ci{width:34px;height:34px}.wg b{font-size:14px}.amt{font-size:30px}.lbs span{font-size:11px}.alloc-grid{gap:6px}.alloc-field{padding:8px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+.auth-card{max-width:520px;margin:24px auto;padding:22px;background:var(--sf);border:1px solid var(--ln);border-radius:20px;box-shadow:0 8px 30px #00000008}.auth-card h1{margin:14px 0 6px;font-family:'Bricolage Grotesque',system-ui,sans-serif}.auth-card .lg{width:46px;height:46px;display:grid;place-items:center;border-radius:14px;background:var(--ls);color:var(--or);font-weight:800;font-size:23px}.auth-card form{display:grid;gap:9px}.auth-card label{margin-top:7px;font-weight:600}.auth-card input,.auth-card select,.auth-card textarea{width:100%;padding:12px;border:1px solid var(--ln);border-radius:10px;background:var(--bg);color:var(--tx);font:inherit}.auth-card .go{width:100%;margin-top:12px}.auth-card .auth-message{padding:10px 12px;border-radius:10px;background:var(--ls);color:var(--bo);overflow-wrap:anywhere}.auth-card .mu{color:var(--mu)}
+</style>
+</head>
+<body>
+<div id="app"><p class="mu">Loading your Financial Floor…</p></div><nav id="nav" hidden aria-label="Main navigation"></nav><div id="ov"></div><div id="toast" role="status" aria-live="polite"></div>
+<script>
+'use strict';
+const SUPABASE_URL = 'https://kplyiweyascwgdapwdzo.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_k4AipUXfHtEjfOJ1Atv5Ng_70GGVqCA';
+
+let supabaseClient = null;
+try {
+  if (window.supabase && typeof window.supabase.createClient === 'function') {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+} catch (e) {
+  console.error('Supabase init failed:', e);
+}
+
+let importedTx = [];
+
+async function loadImported() {
+  if (!supabaseClient) {
+    console.warn('Supabase client not available');
+    return;
+  }
+  try {
+    const { data, error } = await supabaseClient
+      .from('imported_transactions')
+      .select('id, source_app, notification_title, notification_text, amount, direction, transaction_type, captured_at, reviewed')
+      .order('captured_at', { ascending: false })
+      .limit(100);
+    if (error) {
+      console.error('Imported transactions error:', error);
+      return;
+    }
+    importedTx = data || [];
+    newlyImportedReviewIds = processImportedTransactions(importedTx);
+    // Keep review actions visible on Home instead of unexpectedly opening a modal.
+    if (!modalKind) render();
+  } catch (e) {
+    console.error('loadImported failed:', e);
+  }
+}
+
+function importedRow(t) {
+  const dir = inferDirection(t) || 'unknown';
+  const dirLabel = dir === 'credit' ? 'Incoming' : dir === 'debit' ? 'Outgoing' : 'Direction unclear';
+  const dirClass = dir === 'credit' ? 'pos' : dir === 'debit' ? 'neg' : '';
+  const amount = importedAmount(t);
+  const amt = amount != null ? N2(amount) : '—';
+  const stamp = timestampMs(t.captured_at);
+  const time = stamp ? when(stamp) : 'Time unavailable';
+  const status = importedStatus(t);
+  const ledgerEntries = entriesForImport(t.id);
+  const pending = ledgerEntries.find(e => e.bucket === 'pending' && Number(e.amount) < 0);
+  const actions = pending ? `<div class="import-actions"><button type="button" data-review-tx="${esc(String(t.id))}">Choose wallet</button></div>` : '';
+  const details = t.notification_text || '';
+  return `<div class="rw import-row">
+    <span class="ci">${ic(dir === 'credit' ? 'arrow-down-left' : 'arrow-up-right')}</span>
+    <span class="g">
+      <b>${esc(t.source_app || 'Unknown')} · ${esc(t.notification_title || 'Notification')}</b>
+      <small>${esc(dirLabel)} · ${esc(time)}${t.reviewed ? ' · Reviewed in source' : ''}</small>
+      <span class="status-pill ${status.kind}">${esc(status.label)}</span>
+      ${details ? `<div class="subtle" style="margin-top:4px">${esc(details)}</div>` : ''}
+      ${actions}
+    </span>
+    <b class="${dirClass}">${amt}</b>
+  </div>`;
+}
+
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&','<':'<','>':'>','"':'"',"'":'&#39;'}[c]));
+const STORAGE_KEY='financial-floor-standalone-v1';
+const WELCOME_CONFIRMED_KEY='financial-floor-profile-confirmed-v3';
+const THEME_KEY='financial-floor-theme';
+const FRESH_START_KEY='financial-floor-fresh-start-v2';
+const MS=[7,30,90,180];
+const DEFAULT_WALLETS=[
+  {key:'feeding',name:'Feeding',icon:'utensils'},
+  {key:'transport',name:'Transport',icon:'bus'},
+  {key:'data',name:'Data',icon:'smartphone'}
+];
+const N=n=>(n<0?'-':'')+'₦'+Math.round(Math.abs(Number(n)||0)).toLocaleString('en-NG');
+const N2=n=>'₦'+(Number(n)||0).toLocaleString('en-NG',{minimumFractionDigits:2,maximumFractionDigits:2});
+const cap=s=>String(s||'').charAt(0).toUpperCase()+String(s||'').slice(1),ic=(n,c)=>`<i data-lucide="${esc(n)}"${c?` class="${esc(c)}"`:''} aria-hidden="true"></i>`;
+const DEFAULT_CFG={bareBones:3000,targetDays:180,floorPct:30,waitHours:72,splits:{feeding:50,transport:25,data:25},solo:true};
+const BAD=/\$[a-z]{2,}|\b(token|coin|memecoin|pump|dip|ape|ticker|trade|trading|leverage)\b/i;
+const NAV=[['home','house','Home'],['wallets','wallet','Wallets'],['activity','activity','Activity'],['goals','target','Floor goals'],['profile','user-round','Profile']];
+const WALLET_ICONS=['wallet','circle-dollar-sign','shopping-bag','car','home','heart','book','gift','coffee','music','plane','briefcase','utensils','bus','smartphone','piggy-bank','credit-card','banknote'];
+
+const STATES = ['Abia','Adamawa','Akwa Ibom','Anambra','Bauchi','Bayelsa','Benue','Borno','Cross River','Delta','Ebonyi','Edo','Ekiti','Enugu','Gombe','Imo','Jigawa','Kaduna','Kano','Katsina','Kebbi','Kogi','Kwara','Lagos','Nasarawa','Niger','Ogun','Ondo','Osun','Oyo','Plateau','Rivers','Sokoto','Taraba','Yobe','Zamfara','FCT Abuja'];
+const SALARY_RANGES = ['Under ₦50,000','₦50,000 – ₦100,000','₦100,000 – ₦200,000','₦200,000 – ₦500,000','₦500,000 – ₦1,000,000','Above ₦1,000,000','Prefer not to say'];
+const INCOME_SOURCES = ['Salary / Employment','Business / Self-employed','Freelance / Contract','Student','Pension / Allowance','Other'];
+
+let state=loadState(),view='home',wd=null,sel=null,filt='all',hide=readHide(),modalKind=null,toastTimer=null,editingProfile=false,confirmProfileOnThisVersion=false,theme=localStorage.getItem(THEME_KEY)||'light';
+let newlyImportedReviewIds=[];
+// Authentication is enforced before the financial app can render. Verification is handled by Supabase Auth.
+let authReady=false, authStage='loading', authMessage='', pendingProfile=null, authBusy=false;
+const PENDING_PROFILE_KEY='financial-floor-pending-auth-profile-v1';
+function readPendingProfile(){try{return JSON.parse(sessionStorage.getItem(PENDING_PROFILE_KEY)||'null')}catch(_){return null}}
+function writePendingProfile(p){pendingProfile=p;try{sessionStorage.setItem(PENDING_PROFILE_KEY,JSON.stringify(p))}catch(_){}}
+function clearPendingProfile(){pendingProfile=null;try{sessionStorage.removeItem(PENDING_PROFILE_KEY)}catch(_){}}
+function normalizePhone(value){let p=String(value||'').replace(/[\s().-]/g,'');if(p.startsWith('00'))p='+'+p.slice(2);if(p.startsWith('0'))p='+234'+p.slice(1);if(/^234\d{10}$/.test(p))p='+'+p;return p}
+function phoneIsE164(p){return /^\+[1-9]\d{7,14}$/.test(p)}
+function applyFreshStartOnce(){
+  try{
+    if(localStorage.getItem(FRESH_START_KEY)==='1')return;
+    state.ledger=[];
+    state.requests=[];
+    state.notes=[];
+    state.trackingStartedAt=null;
+    state.openingBalance=null;
+    state.heldImportIds=[];
+    state.version=2;
+    persist();
+    localStorage.setItem(FRESH_START_KEY,'1');
+  }catch(e){console.warn('Fresh-start migration could not be saved:',e)}
+}
+applyFreshStartOnce();
+try{confirmProfileOnThisVersion=!!state.profile?.name&&localStorage.getItem(WELCOME_CONFIRMED_KEY)!=='1'}catch(e){confirmProfileOnThisVersion=!!state.profile?.name}
+document.documentElement.setAttribute('data-theme',theme);
+
+function getWallets(){return state.wallets&&state.wallets.length?state.wallets:DEFAULT_WALLETS}
+function getWallet(key){return getWallets().find(w=>w.key===key)||{key,name:cap(key),icon:'wallet'}}
+function getBudget(key){return (state.budgets&&state.budgets[key])||0}
+function freshState(){return{version:2,profile:null,wallets:[...DEFAULT_WALLETS],budgets:{},cfg:{...DEFAULT_CFG,splits:{...DEFAULT_CFG.splits}},ledger:[],requests:[],notes:[],trackingStartedAt:null,openingBalance:null,heldImportIds:[]}}
+function loadState(){try{const raw=localStorage.getItem(STORAGE_KEY);if(!raw)return freshState();const x=JSON.parse(raw);if(!x||typeof x!=='object')return freshState();const d=freshState();const wallets=Array.isArray(x.wallets)&&x.wallets.length?x.wallets:DEFAULT_WALLETS;return{...d,...x,wallets,budgets:x.budgets||{},cfg:x.cfg?{...DEFAULT_CFG,...x.cfg,splits:{...DEFAULT_CFG.splits,...(x.cfg.splits||{})}}:d.cfg,profile:x.profile||null,ledger:Array.isArray(x.ledger)?x.ledger:[],requests:Array.isArray(x.requests)?x.requests:[],notes:Array.isArray(x.notes)?x.notes:[]}}catch(e){return freshState()}}
+function persist(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}catch(e){throw new Error('The browser could not save the data. Check whether site storage is disabled or full.')}}
+function readHide(){try{return localStorage.getItem('financial-floor-hide')==='1'}catch(e){return false}}
+function saveHide(){try{localStorage.setItem('financial-floor-hide',hide?'1':'0')}catch(e){}}
+const m=n=>hide?'₦ ••••••':N(n);
+const uid=()=>Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,9);
+const when=t=>new Date(t).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+function monthStart(){const d=new Date();return new Date(d.getFullYear(),d.getMonth(),1).getTime()}
+function monthlySpent(key){const start=monthStart();return state.ledger.filter(e=>e.bucket===key&&e.type==='spend'&&e.t>=start).reduce((s,e)=>s+Math.abs(Number(e.amount)||0),0)}
+function calc(){const b={floor:0,pending:0};getWallets().forEach(w=>b[w.key]=0);for(const e of state.ledger){if(Object.prototype.hasOwnProperty.call(b,e.bucket))b[e.bucket]+=Number(e.amount)||0}const approved=state.requests.filter(r=>r.status==='approved').reduce((s,r)=>s+(Number(r.amount)||0),0);const refillDue=Math.max(0,approved-state.ledger.filter(e=>e.refill).reduce((s,e)=>s+(Number(e.amount)||0),0));const sp=getWallets().reduce((s,w)=>s+(b[w.key]||0),0);return{b,refillDue,sp,total:b.floor+sp+(b.pending||0),pending:b.pending||0}}
+function roundMoney(n){return Math.round((Number(n)||0)*100)/100}
+function walletShares(source=state.cfg.splits){
+  const wallets=getWallets(), raw={};
+  let sum=0;
+  wallets.forEach(w=>{raw[w.key]=Math.max(0,Number(source?.[w.key])||0);sum+=raw[w.key]});
+  if(!wallets.length)return raw;
+  if(sum<=0){wallets.forEach((w,i)=>raw[w.key]=i===0?100:0);return raw}
+  if(Math.abs(sum-100)>.0001)wallets.forEach(w=>raw[w.key]=raw[w.key]*100/sum);
+  return raw;
+}
+function split(amount,pct,shareOverride=state.cfg.splits){
+  const {b,refillDue}=calc(),target=state.cfg.bareBones*state.cfg.targetDays;
+  amount=roundMoney(amount);let f=0,refill=0;const rate=Math.max(10,Math.min(100,Number(pct)||30));
+  if(refillDue>0){refill=Math.min(amount,refillDue);f=refill}
+  else if(b.floor<target){f=Math.min(roundMoney(amount*rate/100),Math.max(0,roundMoney(target-b.floor)))}
+  f=roundMoney(f);const rest=roundMoney(amount-f),out={floor:f,refill};const wallets=getWallets(),shares=walletShares(shareOverride);let used=0;
+  wallets.forEach((w,i)=>{const part=i===wallets.length-1?roundMoney(rest-used):roundMoney(rest*(shares[w.key]||0)/100);out[w.key]=part;used=roundMoney(used+part)});
+  return out;
+}
+function stat(days){return days>=180?'180-day floor reached':days>=90?'90 days held, building to 180':days>=30?'30 days held, building to 90':days>=7?'7 days held, building to 30':'Below your 7-day seed floor'}
+function lab(e){if(e.bucket==='pending'&&e.sourceImportId)return'Needs review: Spenda debit';if(e.type==='opening')return'Starting Spenda balance';if(e.type==='in')return e.refill?'Floor refill':'Added to '+getWallet(e.bucket).name;if(e.type==='spend')return'Spent: '+(e.note||getWallet(e.bucket).name);if(e.type==='release')return'Floor released: '+(e.note||e.bucket);if(e.type==='move')return e.amount<0?`${cap(e.bucket)} transfer out`:`${cap(e.bucket)} transfer in`;return cap(e.bucket)+' '+(e.note||'activity')}
+function row(e){const positive=e.amount>0;const symbol=e.type==='move'?'arrow-left-right':positive?'arrow-down-left':'arrow-up-right';return`<div class="rw"><span class="ci">${ic(symbol)}</span><span class="g"><b>${esc(lab(e))}</b><small>${esc(cap(e.bucket))} · ${when(e.t)}${e.note&&e.type!=='spend'&&e.type!=='move'?' · '+esc(e.note):''}</small></span><b class="${positive?'pos':'neg'}">${positive?'+':'−'}${N(Math.abs(e.amount))}</b></div>`}
+function addNote(text){state.notes.unshift({id:uid(),text,t:Date.now(),read:false});if(state.notes.length>300)state.notes.length=300}
+function addLedger(entries){const now=Date.now();for(const e of entries){if(!e.amount)continue;state.ledger.unshift({id:uid(),...e,t:now})}if(state.ledger.length>3000)state.ledger.length=3000}
+function timestampMs(value){if(value==null||value==='')return 0;if(typeof value==='number'||/^\d{10,13}$/.test(String(value).trim())){const n=Number(value);return n<1e12?n*1000:n}const ms=Date.parse(value);return Number.isFinite(ms)?ms:0}
+function isSpendaTx(t){return /spenda/i.test(String(t?.source_app||''))}
+function importedAmount(t){if(t?.amount==null)return null;const n=typeof t.amount==='number'?t.amount:Number(String(t.amount).replace(/[^0-9.-]/g,''));return Number.isFinite(n)&&n>0?roundMoney(Math.abs(n)):null}
+function normalizeDirection(t){const d=String(t?.direction||'').trim().toLowerCase();if(['credit','incoming','in','deposit'].includes(d))return'credit';if(['debit','outgoing','out','withdrawal'].includes(d))return'debit';return null}
+function importText(t){return`${t?.transaction_type||''} ${t?.notification_title||''} ${t?.notification_text||''}`.toLowerCase()}
+function isDataPurchase(t){const type=String(t?.transaction_type||'').toLowerCase();return /\b(airtime|data|recharge)\b/i.test(type)||/\b(airtime|recharge|top[ -]?up|data\s*(bundle|purchase|plan|subscription)|buy\s+data|mobile\s+data|internet\s+bundle)\b/i.test(importText(t))}
+function inferDirection(t){
+  const explicit=normalizeDirection(t);if(explicit)return explicit;
+  const text=importText(t);
+  // Notification text can be more informative than MacroDroid's parsed direction.
+  // Only infer a direction from unambiguous transaction wording.
+  const outgoing=[
+    /\btransfer\s+of\s+(?:₦|ngn)?\s*[\d,]+(?:\.\d{1,2})?\s+to\b/i,
+    /\b(?:transfer|payment)\s+(?:was\s+)?(?:sent|completed)\s+to\b/i,
+    /\btransfer(?:red)?\s+to\s+[^.]+\s+(?:was\s+)?successful\b/i,
+    /\b(?:you\s+)?sent\s+(?:₦|ngn)?\s*[\d,]+(?:\.\d{1,2})?\b/i,
+    /\b(?:has\s+been\s+)?debited\b/i,
+    /\bwithdrawal\s+(?:of\s+)?(?:₦|ngn)?\s*[\d,]+/i
+  ].some(re=>re.test(text));
+  if(outgoing||isDataPurchase(t))return'debit';
+  const incoming=[
+    /\bcredited\s+(?:to|into)\s+(?:your|the)\b/i,
+    /\b(?:you\s+)?received\s+(?:a\s+)?(?:transfer|payment|deposit|₦|ngn)/i,
+    /\btransfer\s+from\s+.+\s+(?:was\s+)?successful\b/i,
+    /\bincoming\s+transfer\b/i,
+    /\bdeposit\s+(?:received|successful|credited)\b/i,
+    /\bhas\s+been\s+credited\b/i
+  ].some(re=>re.test(text));
+  if(incoming)return'credit';
+  return null;
+}
+function entriesForImport(id){return state.ledger.filter(e=>e.sourceImportId!=null&&String(e.sourceImportId)===String(id))}
+function importedStatus(t){
+  if(!isSpendaTx(t))return{label:'Not tracked · Spenda only',kind:'muted'};
+  if(!state.trackingStartedAt)return{label:'Not applied · set starting balance first',kind:'muted'};
+  const stamp=timestampMs(t.captured_at);if(!stamp)return{label:'Held · missing timestamp',kind:''};
+  if(stamp<=Number(state.trackingStartedAt))return{label:'Historical · excluded from balance',kind:'muted'};
+  const entries=entriesForImport(t.id);if(entries.length){if(entries.some(e=>e.bucket==='pending'))return{label:'Needs wallet approval',kind:''};return{label:'Posted to balance',kind:'ok'}}
+  if((state.heldImportIds||[]).some(id=>String(id)===String(t.id)))return{label:'Held · verify transaction',kind:''};
+  return{label:'Waiting to process',kind:'muted'};
+}
+function processImportedTransactions(rows){
+  if(!state.trackingStartedAt||!Array.isArray(rows))return[];
+  const cutoff=Number(state.trackingStartedAt),reviewIds=[],held=new Set((state.heldImportIds||[]).map(String));let changed=false;
+  const ordered=[...rows].sort((a,b)=>timestampMs(a.captured_at)-timestampMs(b.captured_at));
+  for(const t of ordered){
+    if(!isSpendaTx(t)||t.id==null)continue;
+    const id=String(t.id);
+    if(entriesForImport(id).length)continue;
+    const stamp=timestampMs(t.captured_at);if(!stamp||stamp<=cutoff)continue;
+    const amount=importedAmount(t),direction=inferDirection(t),txt=importText(t);
+    const failed=/\b(failed|declined|unsuccessful|reversed|reversal)\b/i.test(txt);
+    // Previously held transactions are reconsidered on each refresh, so an
+    // upgraded parser can safely recover older notifications without duplication.
+    if(failed||!amount||!direction){
+      if(held.has(id))continue;
+      state.heldImportIds=state.heldImportIds||[];state.heldImportIds.push(id);held.add(id);changed=true;
+      addNote(failed?`Spenda notification ${t.notification_title||id} was held for verification. No balance change was made.`:`Spenda notification ${t.notification_title||id} could not be safely classified. No balance change was made.`);
+      continue;
+    }
+    if(held.has(id)){
+      state.heldImportIds=(state.heldImportIds||[]).filter(existing=>String(existing)!==id);
+      held.delete(id);changed=true;
+    }
+    if(direction==='credit'){
+      const parts=split(amount,state.cfg.floorPct,state.cfg.splits);const entries=[];
+      if(parts.floor>0)entries.push({type:'in',bucket:'floor',amount:parts.floor,refill:parts.refill>0,note:'Spenda incoming credit',sourceImportId:id,sourceApp:'Spenda'});
+      getWallets().forEach(w=>{if((parts[w.key]||0)>0)entries.push({type:'in',bucket:w.key,amount:parts[w.key],note:'Spenda incoming credit',sourceImportId:id,sourceApp:'Spenda'})});
+      if(entries.length){addLedger(entries);addNote(`${N(amount)} received in Spenda and allocated automatically.`);changed=true;}
+    }else{
+      const dataPurchase=isDataPurchase(t);
+      const dataKnown=dataPurchase&&getWallets().some(w=>w.key==='data');
+      // Spenda charges ₦20 for outgoing transfers/debits, but airtime and
+      // data purchases are fee-free. Track the fee in the ledger debit.
+      const fee=dataPurchase?0:20;
+      const trackedAmount=roundMoney(amount+fee);
+      const bucket=dataKnown?'data':'pending';
+      const note=dataPurchase
+        ? 'Spenda airtime/data purchase'
+        : `${String(t.notification_title||'Spenda outgoing transfer').slice(0,75)} (includes ₦20 Spenda fee)`;
+      addLedger([{type:'spend',bucket,amount:-trackedAmount,note,sourceImportId:id,sourceApp:'Spenda',transactionAmount:amount,transferFee:fee}]);
+      if(!dataKnown){addNote(`${N(trackedAmount)} left Spenda${fee?' (including ₦20 transfer fee)':''}. Confirm which wallet this transaction belongs to.`);reviewIds.push(id)}
+      else if(fee===0){addNote(`${N(amount)} Spenda airtime/data purchase recorded with no fee.`)}
+      changed=true;
+    }
+  }
+  if(changed){try{persist()}catch(e){console.error('Could not save processed Spenda transactions:',e)}}
+  return reviewIds;
+}
+function pendingReviewEntries(){return state.ledger.filter(e=>e.bucket==='pending'&&e.sourceImportId!=null&&Number(e.amount)<0)}
+function pendingReviewMeta(e){
+  const t=importedTx.find(tx=>String(tx.id)===String(e.sourceImportId));
+  const text=String(t?.notification_text||'');
+  const recipient=text.match(/\bto\s+(.+?)(?:\s+at\s+|\s+was\s+successful|\s+successfully|[.]|$)/i)?.[1]?.trim();
+  const title=String(t?.notification_title||'Bank transfer');
+  return {title,recipient:recipient&&recipient.length<70?recipient:'',time:timestampMs(t?.captured_at)||e.t};
+}
+function allocationFields(prefix,shares){return`<div class="alloc-grid">${getWallets().map(w=>`<div class="alloc-field"><label for="${prefix}_${esc(w.key)}">${esc(w.name)} (% of remainder)</label><input id="${prefix}_${esc(w.key)}" type="number" min="0" max="100" step="1" value="${Math.round(Number(shares?.[w.key])||0)}" inputmode="numeric"></div>`).join('')}</div><div class="alloc-help">These wallet percentages apply to the amount left after the Financial Floor allocation. They must total 100%.</div>`}
+function readAllocationShares(prefix){const shares={};getWallets().forEach(w=>{const field=$(`#${prefix}_${w.key}`);shares[w.key]=field?Number(field.value):0});return shares}
+function validateAllocationShares(shares){const vals=getWallets().map(w=>shares[w.key]);if(vals.some(v=>!Number.isSafeInteger(v)||v<0||v>100))throw new Error('Each wallet share must be a whole percentage from 0 to 100.');const sum=vals.reduce((a,b)=>a+b,0);if(sum!==100)throw new Error(`Your wallet shares currently total ${sum}%. Adjust them to total exactly 100%.`);return shares}
+function allocationPreview(amount,pct,shares){if(!(amount>0))return'';const sum=getWallets().reduce((n,w)=>n+(Number(shares[w.key])||0),0);if(sum!==100)return`<div class="allocation-preview"><b>Allocation needs one adjustment</b><p class="warning-copy">Wallet shares currently total ${sum}%. Set them to 100% to preview the split.</p></div>`;const parts=split(amount,pct,shares);return`<div class="allocation-preview"><div class="lb">Allocation preview</div><div class="pvline"><span>Financial Floor${parts.refill?' · refill first':''}</span><b>${N(parts.floor)}</b></div>${getWallets().map(w=>`<div class="pvline"><span>${esc(w.name)}</span><b>${N(parts[w.key]||0)}</b></div>`).join('')}<div class="pvline total"><span>Total allocated</span><b>${N(getWallets().reduce((n,w)=>n+(parts[w.key]||0),0)+parts.floor)}</b></div></div>`}
+function reviewImportedTransaction(id){
+  const entry=state.ledger.find(e=>e.sourceImportId!=null&&String(e.sourceImportId)===String(id)&&e.bucket==='pending'&&Number(e.amount)<0);
+  if(!entry)return;
+  const amount=Math.abs(Number(entry.amount)||0),tx=importedTx.find(t=>String(t.id)===String(id));
+  const desc=(tx?.notification_title||entry.note||'Spenda transfer').slice(0,100);
+  sheet('Confirm outgoing transaction',`<div class="subtle">SPENDA OUTGOING TRANSACTION</div><div class="review-amount">−${N(amount)}</div><p class="mu">This transfer has already left Spenda and is reflected in your total. Confirm which wallet it belongs to so your allocations stay accurate.</p><label for="reviewWallet">Choose a wallet</label>${wsel('reviewWallet',getWallets()[0]?.key)}<label for="reviewNote">Description (optional)</label><input id="reviewNote" maxlength="100" placeholder="e.g. Transport to work" value="${esc(desc)}"><p class="warning-copy">Confirming only assigns the existing debit. It will not deduct the amount a second time.</p><button type="button" class="go" id="confirmReview">Confirm wallet</button><button type="button" class="go s" id="laterReview">Do this later</button>`,()=>{
+    $('#confirmReview').onclick=()=>{const wallet=$('#reviewWallet').value,note=$('#reviewNote').value.trim();const current=state.ledger.find(e=>e.sourceImportId!=null&&String(e.sourceImportId)===String(id)&&e.bucket==='pending');if(!current){closeSheet();render();return}if(!getWallets().some(w=>w.key===wallet)){fail('Choose a valid wallet.');return}current.bucket=wallet;current.type='spend';current.note=note||desc;current.categoryConfirmedAt=Date.now();addNote(`${N(Math.abs(current.amount))} Spenda debit categorised under ${getWallet(wallet).name}.`);finish(`Transaction assigned to ${getWallet(wallet).name}.`)};
+    $('#laterReview').onclick=()=>{closeSheet();render();toast('Transaction remains in Needs Review.');};
+  });
+}
+function saveAndRender(msg){persist();render();if(msg)toast(msg)}
+function budgetBar(key){const budget=getBudget(key);if(!budget)return '';const spent=monthlySpent(key);const pct=Math.min(100,Math.round(spent/budget*100));const cls=pct>=100?'over':pct>=80?'warn':'';const label=pct>=100?'Over budget':pct>=80?'Close to limit':'On track';return`<div class="budget-bar"><div class="budget-label"><span>${label}</span><span>${N(spent)} / ${N(budget)}</span></div><div class="bar ${cls}"><i style="width:${pct}%"></i></div></div>`}
+function recentNotes(limit=5){const notes=[];const seen=new Set();for(const e of state.ledger){if(e.type==='spend'&&e.note&&!seen.has(e.note)){seen.add(e.note);notes.push(e.note);if(notes.length>=limit)break}}return notes}
+function donutSVG(data,total){if(!total)return '<div class="empty">No spending this month yet.</div>';const r=46,c=2*Math.PI*r;let offset=0;const colors=['#C65316','#F47738','#17865B','#4CC38A','#E8A317','#C43C35','#78716C','#A83D0B'];const paths=data.map((d,i)=>{const frac=d.value/total;const dash=frac*c;const gap=c-dash;const color=colors[i%colors.length];const path=`<circle cx="60" cy="60" r="${r}" fill="none" stroke="${color}" stroke-width="16" stroke-dasharray="${dash} ${gap}" stroke-dashoffset="-${offset}" stroke-linecap="butt"/>`;offset+=dash;return path}).join('');return `<svg class="donut" viewBox="0 0 120 120" aria-label="Spending breakdown">${paths}<text x="60" y="58" text-anchor="middle" font-size="11" fill="var(--mu)">Spent</text><text x="60" y="74" text-anchor="middle" font-size="13" font-weight="700" fill="var(--tx)">${N(total)}</text></svg>`}
+function floorCard(){const{b}=calc(),days=state.cfg.bareBones>0?Math.max(0,b.floor/state.cfg.bareBones):0,next=MS.find(x=>x>days),d=sel||next||180,target=d*state.cfg.bareBones,rem=Math.max(0,target-b.floor),pct=target>0?Math.min(100,Math.max(0,b.floor/target*100)):0,track=Math.min(100,Math.max(0,days/180*100));return`<div class="c"><div class="lb">YOUR FINANCIAL FLOOR</div><div class="fd"><b>${days.toFixed(days<10?1:0)}</b> days of floor</div><div class="mu">${m(b.floor)} protected · ${esc(stat(days))}</div><div class="tw"><div class="trk"><i style="width:${track}%"></i>${MS.map(x=>`<button type="button" class="mk ${days>=x?'dn':x===next?'ac':''} ${x===d?'sl':''}" style="left:${x/180*100}%" data-ms="${x}" aria-label="Select ${x}-day goal" title="${x}-day goal"></button>`).join('')}</div><div class="lbs">${MS.map(x=>`<span style="left:${x/180*100}%">${x}d</span>`).join('')}</div></div><div class="gl">${days>=d?'Goal reached':'Your selected goal'}<br><b>${d} days of floor · ${N(target)}</b><div class="bar"><i style="width:${pct}%"></i></div>${rem?N(rem)+' remaining':'You have this covered'}</div></div>`}
+function floorCard(){const{b}=calc(),days=state.cfg.bareBones>0?Math.max(0,b.floor/state.cfg.bareBones):0,next=MS.find(x=>x>days),d=sel||next||180,target=d*state.cfg.bareBones,rem=Math.max(0,target-b.floor),pct=target>0?Math.min(100,Math.max(0,b.floor/target*100)):0,track=Math.min(100,Math.max(0,days/180*100));return`<div class="c"><div class="lb">YOUR FINANCIAL FLOOR</div><div class="fd"><b>${days.toFixed(days<10?1:0)}</b> days of floor</div><div class="mu">${m(b.floor)} protected · ${esc(stat(days))}</div><div class="tw"><div class="trk"><i style="width:${track}%"></i>${MS.map(x=>`<button type="button" class="mk ${days>=x?'dn':x===next?'ac':''} ${x===d?'sl':''}" style="left:${x/180*100}%" data-ms="${x}" aria-label="Select ${x}-day goal" title="${x}-day goal"></button>`).join('')}</div><div class="lbs">${MS.map(x=>`<span style="left:${x/180*100}%">${x}d</span>`).join('')}</div></div><div class="gl">${days>=d?'Goal reached':'Your selected goal'}<br><b>${d} days of floor · ${N(target)}</b><div class="bar"><i style="width:${pct}%"></i></div>${rem?N(rem)+' remaining':'You have this covered'}</div></div>`}
+function vHome(){const{b,refillDue,sp,total,pending}=calc(),unread=state.notes.filter(n=>!n.read).length,name=state.profile?.name||'there',pic=state.profile?.picture;const avatar=pic?`<img class="avatar" src="${esc(pic)}" alt="">`:`<div class="lg">F</div>`;let o=`<div class="top">${avatar}<div class="g"><small>Welcome,</small><b>${esc(name)}</b></div><button class="ib" data-n aria-label="Notifications">${ic('bell')}${unread?`<span class="bd">${unread>99?'99+':unread}</span>`:''}</button></div><div class="bal"><div class="r"><span>Total balance</span><button id="eye" aria-label="${hide?'Show':'Hide'} balances" title="${hide?'Show':'Hide'} balances">${ic(hide?'eye-off':'eye')}</button></div><div class="amt">${hide?'₦ ••••••••':N2(total)}</div><p>Protected floor: ${m(b.floor)} · Wallets: ${m(sp)}${pending<0?` · Needs review: ${m(Math.abs(pending))}`:''}</p></div>`;if(!state.trackingStartedAt)o+=`<div class="setup-prompt"><b>Your balances have been reset</b><p>FF starts at ₦0 in this version. Enter the current available balance shown in Spenda to begin tracking. Older notifications will remain visible but will not be added again.</p><button type="button" class="go" data-a="in">Set starting Spenda balance</button></div>`;if(refillDue>0)o+=`<div class="warn">Floor refill first: ${N(refillDue)} of your next deposit${refillDue===1?'':'s'} will replenish the floor.</div>`;const waiting=pendingReviewEntries();if(waiting.length)o+=`<section class="review-prompt" aria-label="Transactions needing approval"><div class="review-head"><span class="review-icon">${ic('clipboard-check')}</span><div class="g"><b>Needs your approval</b><small>${waiting.length} outgoing transaction${waiting.length===1?'':'s'} waiting for a wallet</small></div></div><p>The money has already been deducted from your total. Choose the wallet each payment belongs to. Confirming will not deduct it again.</p>${waiting.slice(0,3).map(e=>{const meta=pendingReviewMeta(e);return `<div class="review-item"><span class="g"><b class="review-amount-small">${N(Math.abs(e.amount))}</b><small>${esc(meta.recipient||meta.title)} · ${when(meta.time)}</small></span><button type="button" class="review-btn" data-review-tx="${esc(String(e.sourceImportId))}">Choose wallet</button></div>`}).join('')}${waiting.length>3?`<button type="button" class="go s" data-v="activity">Review all ${waiting.length} transactions</button>`:''}</section>`;o+=floorCard();o+=`<div class="sh2"><b>Quick actions</b></div><div class="qa">${[['in','plus','Add money'],['spend','arrow-up-right','Spend'],['move','arrow-left-right','Move'],['rel','lock-open','Release floor']].map(([k,i,t])=>`<button type="button" data-a="${k}"><span class="ci">${ic(i)}</span>${t}</button>`).join('')}</div><div class="sh2"><b>Your wallets</b><button type="button" data-v="wallets">See all</button></div><div class="wg">${getWallets().map(w=>`<button type="button" data-w="${w.key}"><span class="ci">${ic(w.icon)}</span>${esc(w.name)}<b>${N(b[w.key]||0)}</b>${budgetBar(w.key)}</button>`).join('')}</div><div class="sh2"><b>Recent activity</b><button type="button" data-v="activity">See all</button></div>${state.ledger.slice(0,4).map(row).join('')||'<div class="empty">Your activity will appear here after you establish your starting balance.</div>'}`;return o}
+function vWallets(){const{b,sp,total}=calc();const wallets=getWallets();if(wd){const es=state.ledger.filter(e=>e.bucket===wd);const w=getWallet(wd);return`<button type="button" class="sh2" style="border:0;background:none;color:var(--or);padding:0" data-w="">‹ All wallets</button><h1>${esc(w.name)}</h1><div class="bal"><span>Wallet balance</span><div class="amt">${hide?'₦ ••••••••':N2(b[wd]||0)}</div><p>Part of your total tracked funds</p></div>${budgetBar(wd)}<div class="row" style="margin-top:12px"><button class="go" data-a="spend" data-p="${wd}">Spend</button><button class="go s" data-a="move" data-p="${wd}">Move money</button><button class="go s" data-a="manage" data-p="${wd}">Manage</button></div><div class="sh2"><b>Transactions</b></div>${es.map(row).join('')||'<div class="empty">No transactions in this wallet yet.</div>'}`};return`<h1>Your wallets</h1><p class="mu">Know what each part of your money is for.</p><div class="c"><div class="lb">Total tracked funds</div><div class="dsp" style="font-size:30px;font-weight:800;margin:5px 0">${hide?'₦ ••••••••':N2(total)}</div><span class="mu">Floor ${m(b.floor)} + wallet funds ${m(sp)}. Transfers between wallets do not change the total.</span></div>`+wallets.map(w=>{const last=state.ledger.find(e=>e.bucket===w.key);return`<div class="c"><div class="row" style="align-items:center"><span class="ci" style="width:42px;height:42px;border-radius:50%;background:var(--ls);color:var(--or);display:grid;place-items:center;flex:none">${ic(w.icon)}</span><div class="g"><b>${esc(w.name)}</b><small>${last?'Last activity '+when(last.t):'No activity yet'}</small></div><b class="dsp" style="font-size:20px">${hide?'₦ ••••••':N(b[w.key]||0)}</b></div>${budgetBar(w.key)}<div class="row" style="margin-top:12px"><button class="go s" style="margin:0" data-w="${w.key}">Details</button><button class="go s" style="margin:0" data-a="spend" data-p="${w.key}">Spend</button><button class="go s" style="margin:0" data-a="manage" data-p="${w.key}">Manage</button></div></div>`}).join('')+`<button class="go add-wallet-btn" data-a="addwallet">${ic('plus')} Add new wallet</button>`}
+function vActivity(){const wallets=getWallets();const start=monthStart();const monthSpends=state.ledger.filter(e=>e.type==='spend'&&e.t>=start);const byWallet={};monthSpends.forEach(e=>{byWallet[e.bucket]=(byWallet[e.bucket]||0)+Math.abs(e.amount)});const data=Object.entries(byWallet).map(([k,v])=>({key:k,name:getWallet(k).name,value:v})).sort((a,b)=>b.value-a.value);const totalMonth=data.reduce((s,d)=>s+d.value,0);const es=state.ledger.filter(e=>filt==='all'||(filt==='floor'?e.bucket==='floor':e.bucket===filt));return`<h1>Activity</h1><p class="mu">A record of additions, spending, transfers and floor activity.</p>
+<div class="c"><div class="lb">This month</div><div class="donut-wrap">${donutSVG(data,totalMonth)}<div>${data.length?data.map(d=>`<div class="q" style="border:0;padding:4px 0"><b>${esc(d.name)}</b> · ${N(d.value)}</div>`).join(''):'<div class="mu">No spending recorded this month.</div>'}</div></div></div>
+<div class="chips">${['all','floor',...wallets.map(w=>w.key)].map(f=>`<button type="button" data-f="${f}" class="${filt===f?'on':''}">${f==='all'?'All activity':f==='floor'?'Floor':getWallet(f).name}</button>`).join('')}</div>${es.map(row).join('')||'<div class="empty">No matching transactions yet.</div>'}
+<div class="sh2"><b>Imported Transactions</b><button type="button" id="refreshImported">Refresh</button></div>
+<div id="importedList">${importedTx.length ? importedTx.map(importedRow).join('') : '<div class="empty">No imported notifications yet. Trigger a Spenda notification to see it here.</div>'}</div>
+<div class="sh2"><b>Floor release requests</b></div>${state.requests.slice(0,30).map(reqH).join('')||'<div class="empty">No floor release requests.</div>'}`}
+function reqH(r){let st=r.status,acts='';if(st==='waiting'){const left=r.releaseAt-Date.now();if(left>0)st='waiting '+(left>=36e5?Math.ceil(left/36e5)+' h':Math.ceil(left/6e4)+' min')+' more';else{st='ready for approval';acts+=`<button class="a" data-act="approved" data-id="${r.id}">Approve release</button><button data-act="denied" data-id="${r.id}">Deny</button>`}acts+=`<button data-act="cancelled" data-id="${r.id}">Cancel</button>`}return`<div class="q"><b>${N(r.amount)}</b> · ${esc(r.reason)}${r.note?' · '+esc(r.note):''}<br><span class="mu">${esc(st)} · ${when(r.createdAt)}</span><br>${acts}</div>`}
+function vGoals(){const{b,refillDue}=calc(),days=state.cfg.bareBones>0?b.floor/state.cfg.bareBones:0,next=MS.find(x=>x>days);return`<h1>Floor goals</h1><p class="mu">Each target represents days of essential living costs, using your current daily baseline of ${N(state.cfg.bareBones)}.</p>${refillDue>0?`<div class="warn">Your next ${N(refillDue)} in deposits will refill the floor first.</div>`:''}`+MS.map(d=>{const target=d*state.cfg.bareBones,pct=target?Math.min(100,Math.max(0,b.floor/target*100)):0,rem=Math.max(0,target-b.floor);return`<div class="c"><div class="row" style="justify-content:space-between;align-items:center"><b>${d}-day floor</b><span class="${days>=d?'pos':'mu'}">${days>=d?'Reached':d===next?'Next goal':'Upcoming'}</span></div><div class="dsp" style="font-size:25px;font-weight:800;margin:5px 0">${N(target)}</div><div class="bar"><i style="width:${pct}%"></i></div><span class="mu">${rem?N(rem)+' remaining':'Covered by your current floor'}</span><button class="go s" data-ms="${d}">View this goal on home</button></div>`}).join('')+`<button class="go" data-a="set">Adjust floor settings</button>`}
+function vProfile(){const p=state.profile||{};if(!isProfileComplete()||editingProfile||confirmProfileOnThisVersion){return`<h1>${editingProfile?'Edit profile':'Welcome'}</h1><p class="mu">${editingProfile?'Update your details.':'Set up your profile to get started.'}</p>
+<form id="welcomeForm"><label for="nm">Full name</label><input id="nm" required value="${esc(p.name||'')}" maxlength="60"><label for="em">Email</label><input id="em" type="email" required value="${esc(p.email||'')}"><label for="ph">Phone</label><input id="ph" required value="${esc(p.phone||'')}" maxlength="20"><label for="dob">Date of birth</label><input id="dob" type="date" required value="${esc(p.dob||'')}"><label for="st">State</label><select id="st" required><option value="">Select</option>${STATES.map(s=>`<option ${p.state===s?'selected':''}>${esc(s)}</option>`).join('')}</select><label for="ad">Address</label><textarea id="ad" required maxlength="200">${esc(p.address||'')}</textarea><label for="so">Source of income</label><select id="so" required><option value="">Select</option>${INCOME_SOURCES.map(s=>`<option ${p.sourceOfIncome===s?'selected':''}>${esc(s)}</option>`).join('')}</select><label for="sr">Salary range</label><select id="sr" required><option value="">Select</option>${SALARY_RANGES.map(s=>`<option ${p.salaryRange===s?'selected':''}>${esc(s)}</option>`).join('')}</select><label>Profile picture (optional)</label><input type="file" accept="image/*" id="pic"><img id="picPrev" class="profile-pic" style="display:${p.picture?'block':'none'}" src="${esc(p.picture||'')}"><button type="submit" class="go">Save profile</button>${editingProfile?'<button type="button" class="go s" id="cancelProfileEdit">Cancel</button>':''}</form>`}
+return`<div class="top"><div class="lg">${p.picture?`<img class="avatar" src="${esc(p.picture)}" alt="">`:esc((p.name||'F')[0])}</div><div class="g"><b>${esc(p.name)}</b><small>Profile</small></div></div>
+<div class="c"><div class="theme-toggle"><span>Dark mode</span><button type="button" class="theme-switch" data-theme-toggle data-state="${theme}" role="switch" aria-checked="${theme==='dark'}" aria-label="${theme==='dark'?'Switch to light mode':'Switch to dark mode'}"><span class="switch-thumb">${ic(theme==='dark'?'moon':'sun')}</span></button></div></div>
+<div class="c"><div class="lb">Personal information</div>
+  <div class="q"><b>Email</b><br><span class="mu">${esc(p.email||'—')}</span></div>
+  <div class="q"><b>Phone</b><br><span class="mu">${esc(p.phone||'—')}</span></div>
+  <div class="q"><b>Date of birth</b><br><span class="mu">${esc(p.dob||'—')}</span></div>
+  <div class="q"><b>State</b><br><span class="mu">${esc(p.state||'—')}</span></div>
+  <div class="q"><b>Address</b><br><span class="mu">${esc(p.address||'—')}</span></div>
+  <div class="q"><b>Source of income</b><br><span class="mu">${esc(p.sourceOfIncome||'—')}</span></div>
+  <div class="q"><b>Salary range</b><br><span class="mu">${esc(p.salaryRange||'—')}</span></div>
+  <button class="go s" type="button" data-edit-profile>Edit profile</button>
+</div>
+<div class="c"><div class="lb">Floor settings</div><p class="mu">Daily essentials, goal length, deposit allocation and release waiting period.</p><button class="go s" data-a="set">Open floor settings</button></div><div class="c"><div class="lb">Spenda balance check</div><p class="mu">Compare FF with the current available balance in Spenda. Reconcile differences only after checking for delayed notifications.</p><button class="go s" data-a="count">Compare with Spenda</button></div>
+<div class="c"><div class="lb">Data on this device</div><p class="mu">Your profile and financial ledger are stored in this browser. Spenda notifications are imported from Supabase; your local wallet allocations are not yet shared across devices.</p><div class="row"><button class="go s" data-a="export">Export backup</button><button class="go s" data-a="import">Import backup</button></div><button class="go s" data-a="resetbalance">Reset balances to zero</button><button class="go s" data-a="reset">Reset all app data</button></div>`}
+const V={home:vHome,wallets:vWallets,activity:vActivity,goals:vGoals,profile:vProfile};
+function icons(){try{if(window.lucide&&lucide.createIcons)lucide.createIcons()}catch(e){}}
+const MONEY_PATTERN=/₦\s*(?:[-−]\s*)?(?:\d[\d,]*(?:\.\d+)?|[•●*]{3,})/g;
+function applyBalanceVisibility(root=document.body){if(!hide||!root)return;const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let node;while((node=walker.nextNode())){const parent=node.parentElement;if(parent&&parent.closest('script,style,input,textarea,select,option,[contenteditable="true"]'))continue;const value=node.nodeValue;if(!value||!value.includes('₦'))continue;const masked=value.replace(MONEY_PATTERN,'₦ ••••••');if(masked!==value)node.nodeValue=masked}}
+
+function authScreen(){
+  const p=pendingProfile||readPendingProfile()||state.profile||{};
+  const busy=authBusy?'disabled':'';
+  if(!supabaseClient)return `<div class="auth-card"><div class="lg">F</div><h1>Secure sign-in unavailable</h1><p class="mu">Financial Floor could not connect to its authentication service. Check your connection and reload. No financial screens are available until verification can be checked.</p><button class="go" type="button" id="authRetry">Try again</button></div>`;
+  if(authStage==='verify_email')return `<div class="auth-card"><div class="lg">F</div><h1>Verify your email</h1><p class="mu">Enter the one-time code sent to <b>${esc(p.email||'your email')}</b>. You must verify both your email and phone before entering Financial Floor.</p><form id="verifyEmailForm"><label for="emailOtp">Email OTP</label><input id="emailOtp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,8}" minlength="6" maxlength="8" required><button class="go" type="submit" ${busy}>Verify email</button></form><button class="go s" id="resendEmailOtp" type="button" ${busy}>Resend email code</button><button class="go s" id="restartAuth" type="button" ${busy}>Back to registration</button>${authMessage?`<p class="auth-message">${esc(authMessage)}</p>`:''}</div>`;
+  if(authStage==='verify_phone')return `<div class="auth-card"><div class="lg">F</div><h1>Verify your phone</h1><p class="mu">Enter the SMS code sent to <b>${esc(p.phone||'your phone')}</b>. Your account stays locked until this step succeeds.</p><form id="verifyPhoneForm"><label for="phoneOtp">SMS OTP</label><input id="phoneOtp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,8}" minlength="6" maxlength="8" required><button class="go" type="submit" ${busy}>Verify phone</button></form><button class="go s" id="resendPhoneOtp" type="button" ${busy}>Resend SMS code</button><button class="go s" id="restartAuth" type="button" ${busy}>Restart verification</button>${authMessage?`<p class="auth-message">${esc(authMessage)}</p>`:''}</div>`;
+  return `<div class="auth-card"><div class="lg">F</div><h1>Welcome to Financial Floor</h1><p class="mu">Create your profile, then verify your email and phone number. You cannot access the app until both codes are confirmed.</p><form id="authRegisterForm"><label for="authNm">Full name</label><input id="authNm" required maxlength="60" autocomplete="name" value="${esc(p.name||'')}"><label for="authEm">Email</label><input id="authEm" type="email" required autocomplete="email" value="${esc(p.email||'')}"><label for="authPh">Phone number</label><input id="authPh" type="tel" required autocomplete="tel" placeholder="08012345678 or +2348012345678" value="${esc(p.phone||'')}"><p class="mu">For Nigerian numbers, you can enter 080… or +234…</p><label for="authDob">Date of birth</label><input id="authDob" type="date" required value="${esc(p.dob||'')}"><label for="authSt">State</label><select id="authSt" required><option value="">Select</option>${STATES.map(s=>`<option ${p.state===s?'selected':''}>${esc(s)}</option>`).join('')}</select><label for="authAd">Address</label><textarea id="authAd" required maxlength="200">${esc(p.address||'')}</textarea><label for="authSo">Source of income</label><select id="authSo" required><option value="">Select</option>${INCOME_SOURCES.map(s=>`<option ${p.sourceOfIncome===s?'selected':''}>${esc(s)}</option>`).join('')}</select><label for="authSr">Salary range</label><select id="authSr" required><option value="">Select</option>${SALARY_RANGES.map(s=>`<option ${p.salaryRange===s?'selected':''}>${esc(s)}</option>`).join('')}</select><button class="go" type="submit" ${busy}>Send verification codes</button></form>${authMessage?`<p class="auth-message">${esc(authMessage)}</p>`:''}</div>`;
+}
+async function bootAuth(){
+  authReady=false;authStage='loading';
+  if(!supabaseClient){authReady=true;authStage='register';authMessage='Authentication service is unavailable. Configure the Supabase client before using the app.';render();return}
+  try{
+    const {data,error}=await supabaseClient.auth.getSession();if(error)throw error;
+    const user=data?.session?.user;
+    if(user&&user.email_confirmed_at&&user.phone_confirmed_at){
+      authStage='ready';
+      const metadata=user.user_metadata||{};
+      if(!state.profile&&metadata.financial_floor_profile){state.profile=metadata.financial_floor_profile;persist()}
+      if(!state.profile?.name){authStage='register';pendingProfile=readPendingProfile()||metadata.financial_floor_profile||null}
+    }else if(user&&user.email_confirmed_at){
+      authStage='verify_phone';pendingProfile=readPendingProfile()||state.profile||user.user_metadata?.financial_floor_profile||{email:user.email,phone:user.phone||''};
+    }else{
+      authStage='register';pendingProfile=readPendingProfile()||state.profile||null;
+    }
+  }catch(e){authStage='register';authMessage='Could not confirm your sign-in status. Check your connection and try again.';console.error('Auth bootstrap failed:',e)}
+  authReady=true;render();
+}
+async function startAuthRegistration(){
+  if(authBusy)return;authMessage='';
+  const profile={name:$('#authNm').value.trim(),email:$('#authEm').value.trim().toLowerCase(),phone:normalizePhone($('#authPh').value),dob:$('#authDob').value,state:$('#authSt').value,address:$('#authAd').value.trim(),sourceOfIncome:$('#authSo').value,salaryRange:$('#authSr').value,picture:state.profile?.picture||''};
+  if(!profile.name||!profile.email||!profile.phone||!profile.dob||!profile.state||!profile.address||!profile.sourceOfIncome||!profile.salaryRange){authMessage='Please complete every required field.';render();return}
+  if(!phoneIsE164(profile.phone)){authMessage='Enter a valid international phone number, e.g. +2348012345678.';render();return}
+  writePendingProfile(profile);authBusy=true;render();
+  try{
+    const {error}=await supabaseClient.auth.signInWithOtp({email:profile.email,options:{shouldCreateUser:true,data:{name:profile.name,phone:profile.phone,financial_floor_profile:profile}}});
+    if(error)throw error;authStage='verify_email';authMessage='A code has been sent to your email. Check your inbox and spam folder.';
+  }catch(e){authStage='register';authMessage=e.message||'Could not send the email code. Check your details and try again.'}
+  finally{authBusy=false;render()}
+}
+async function verifyEmailOtp(){
+  if(authBusy)return;authBusy=true;authMessage='';const token=$('#emailOtp').value.trim();const p=pendingProfile||readPendingProfile();render();
+  try{
+    if(!p?.email)throw new Error('Your registration details are missing. Restart registration.');
+    const {data,error}=await supabaseClient.auth.verifyOtp({email:p.email,token,type:'email'});if(error)throw error;
+    if(!data?.user)throw new Error('Email verification did not return a user. Please try again.');
+    const {error:phoneError}=await supabaseClient.auth.updateUser({phone:p.phone});if(phoneError)throw phoneError;
+    authStage='verify_phone';authMessage='Email verified. An SMS code has been sent to your phone.';
+  }catch(e){authStage='verify_email';authMessage=e.message||'Email verification failed. Check the code and try again.'}
+  finally{authBusy=false;render()}
+}
+async function resendAuthCode(kind){
+  if(authBusy)return;authBusy=true;authMessage='';render();const p=pendingProfile||readPendingProfile();
+  try{
+    let result;
+    if(kind==='email')result=await supabaseClient.auth.signInWithOtp({email:p?.email,options:{shouldCreateUser:true}});
+    else result=await supabaseClient.auth.resend({type:'phone_change',phone:p?.phone});
+    if(result?.error)throw result.error;authMessage=kind==='email'?'A new email code has been sent.':'A new SMS code has been requested.';
+  }catch(e){authMessage=e.message||'Could not resend the code. Please wait and try again.'}
+  finally{authBusy=false;render()}
+}
+async function verifyPhoneOtp(){
+  if(authBusy)return;authBusy=true;authMessage='';const token=$('#phoneOtp').value.trim();const p=pendingProfile||readPendingProfile();render();
+  try{
+    if(!p?.phone)throw new Error('Your phone number is missing. Restart registration.');
+    const {data,error}=await supabaseClient.auth.verifyOtp({phone:p.phone,token,type:'phone_change'});if(error)throw error;
+    const user=data?.user;if(!user?.email_confirmed_at||!user?.phone_confirmed_at)throw new Error('Both email and phone must be verified. Please try again.');
+    const {error:metaError}=await supabaseClient.auth.updateUser({data:{name:p.name,financial_floor_profile:p}});if(metaError)throw metaError;
+    state.profile=p;persist();clearPendingProfile();authStage='ready';authMessage='';editingProfile=false;confirmProfileOnThisVersion=false;view='home';
+  }catch(e){authStage='verify_phone';authMessage=e.message||'Phone verification failed. Check the code and try again.'}
+  finally{authBusy=false;render();if(authStage==='ready')toast('Email and phone verified. Welcome to Financial Floor.')}
+}
+function isProfileComplete(){const p=state.profile;if(!p)return false;return !!(p.name&&p.email&&p.state&&p.dob&&p.phone&&p.sourceOfIncome&&p.salaryRange&&p.address)}
+function render(){const app=$('#app'),nav=$('#nav');if(!authReady||authStage!=='ready'){nav.hidden=true;app.innerHTML=authStage==='loading'?'<div class="auth-card"><h1>Checking verification…</h1><p class="mu">Please wait while Financial Floor checks your secure session.</p></div>':authScreen();icons();applyBalanceVisibility(document.body);return}if(!isProfileComplete()||editingProfile||confirmProfileOnThisVersion){nav.hidden=true;app.innerHTML=vProfile();icons();applyBalanceVisibility(document.body);return}nav.hidden=false;nav.innerHTML=NAV.map(([k,i,l])=>`<button type="button" data-v="${k}" class="${view===k?'on':''}" aria-label="${l}">${ic(i)}<span>${l}</span></button>`).join('');app.innerHTML=V[view]?V[view]():'';icons();applyBalanceVisibility(document.body)}
+function toast(t){const el=$('#toast');el.textContent=t;el.style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.style.display='none',2800)}
+function sheet(title,html,setup){modalKind=title;$('#ov').innerHTML=`<div class="ov"><div class="sh" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="hd"><span>${esc(title)}</span><button type="button" id="cl" aria-label="Close">${ic('x')}</button></div>${html}<div class="msg" id="msg" role="status"></div></div></div>`;icons();$('#cl').onclick=closeSheet;$('.ov').onclick=e=>{if(e.target.classList.contains('ov'))closeSheet()};if(setup)setup();applyBalanceVisibility(document.body)}
+
+function closeSheet(){modalKind=null;$('#ov').innerHTML=''}
+function fail(msg){const m=$('.msg');if(m){m.textContent=msg;m.className='msg bad'}else toast(msg)}
+const amountField='<label for="a">Amount (₦)</label><input id="a" type="number" min="1" step="1" inputmode="numeric" required>';
+function readAmount(){const v=Number($('#a').value);if(!Number.isSafeInteger(v)||v<=0)throw new Error('Enter a positive whole naira amount.');return v}
+function wsel(id,sel){return`<select id="${id}">${getWallets().map(w=>`<option value="${w.key}" ${w.key===sel?'selected':''}>${esc(w.name)}</option>`).join('')}</select>`}
+function recentNotes(){const s=new Set();state.ledger.filter(e=>e.type==='spend'&&e.note).slice(0,20).forEach(e=>s.add(e.note));return[...s].slice(0,6)}
+function finish(text){persist();closeSheet();render();toast(text)}
+function actionForm(k,p){
+ if(k==='in'){
+   const starting=!state.trackingStartedAt,initialShares=walletShares();
+   const intro=starting?`<div class="warn">Enter the exact available balance currently shown in Spenda. This sets your opening balance; it is not a new deposit. Check Spenda immediately before confirming and avoid transacting during setup.</div>`:`<div class="warn">Use this for money that is not already reflected in Spenda's imported transactions. Do not manually add a Spenda transfer that FF has already imported, or the total will be counted twice.</div>`;
+   sheet(starting?'Set starting Spenda balance':'Add money manually',`${intro}<label for="a">${starting?'Current available Spenda balance (₦)':'Amount to add (₦)'}</label><input id="a" type="number" min="1" step="1" inputmode="numeric" required><label for="fp">Financial Floor allocation (%) · minimum 10%</label><input id="fp" type="number" min="10" max="100" step="1" value="${Math.max(10,state.cfg.floorPct)}"><label>Allocate the remainder across wallets</label>${allocationFields('share',initialShares)}<label for="n">Description (optional)</label><input id="n" maxlength="100" placeholder="${starting?'Opening Spenda balance':'What is this addition for?'}"><label style="display:flex;gap:8px;align-items:flex-start;color:var(--tx);margin-top:12px"><input id="saveAlloc" type="checkbox" ${starting?'checked':''} ${starting?'disabled':''}> Use these percentages for future automatic incoming credits</label><div id="pv"></div><button type="button" class="go" id="go">${starting?'Confirm starting balance':'Add and allocate money'}</button>`,()=>{
+     const pv=()=>{const a=Number($('#a').value)||0,fp=Number($('#fp').value),shares=readAllocationShares('share');$('#pv').innerHTML=allocationPreview(a,fp,shares)};
+     $('#a').oninput=pv;$('#fp').oninput=pv;getWallets().forEach(w=>{const f=$(`#share_${w.key}`);if(f)f.oninput=pv});pv();
+     $('#go').onclick=()=>{try{
+       const a=readAmount(),f=Number($('#fp').value),shares=validateAllocationShares(readAllocationShares('share'));
+       if(!Number.isSafeInteger(f)||f<10||f>100)throw new Error('Financial Floor allocation must be between 10% and 100%.');
+       if(starting&&state.trackingStartedAt)throw new Error('Tracking has already been started. Close this window and refresh.');
+       const parts=split(a,f,shares),note=$('#n').value.trim()||(starting?'Opening Spenda balance':'Manual addition');
+       const entries=[];if(parts.floor>0)entries.push({type:starting?'opening':'in',bucket:'floor',amount:parts.floor,refill:parts.refill>0,note,sourceApp:starting?'Spenda opening balance':'Manual'});
+       getWallets().forEach(w=>{if((parts[w.key]||0)>0)entries.push({type:starting?'opening':'in',bucket:w.key,amount:parts[w.key],note,sourceApp:starting?'Spenda opening balance':'Manual'})});
+       addLedger(entries);
+       if(starting||$('#saveAlloc').checked){state.cfg.floorPct=f;state.cfg.splits={...state.cfg.splits,...shares};}
+       if(starting){state.trackingStartedAt=Date.now();state.openingBalance=a;state.version=2;addNote(`Starting Spenda balance set to ${N(a)}. Existing imported notifications were not applied.`)}
+       else if($('#saveAlloc').checked)addNote('Default automatic allocation percentages updated from a manual addition.');
+       addNote(`${N(a)} ${starting?'starting balance':'manual addition'} allocated: ${N(parts.floor)} to the floor and ${N(a-parts.floor)} across wallets.`);
+       finish(starting?'Starting balance saved. Spenda tracking is active.':`Allocated ${N(a)} across your floor and wallets.`);
+       if(starting)loadImported();
+     }catch(e){fail(e.message)}}
+   });return
+ }
+ if(k==='spend'){const notes=recentNotes();const chips=notes.length?`<div class="quick-chips">${notes.map(n=>`<button type="button" data-note="${esc(n)}">${esc(n)}</button>`).join('')}</div>`:'';sheet('Spend',`<label for="w1">Wallet</label>${wsel('w1',p||getWallets()[0]?.key)}${amountField}<label for="n">What was it for?</label>${chips}<input id="n" maxlength="60" placeholder="e.g. groceries"><button type="button" class="go" id="go">Log spend</button>`,()=>{document.querySelectorAll('[data-note]').forEach(btn=>btn.onclick=()=>{$('#n').value=btn.dataset.note});$('#go').onclick=()=>{try{const a=readAmount(),w=$('#w1').value,n=$('#n').value.trim(),{b}=calc();if(!n)throw new Error('Describe what the expense was for.');if(a>b[w])throw new Error(`${getWallet(w).name} has only ${N(b[w])}. Move money into this wallet first.`);addLedger([{type:'spend',bucket:w,amount:-a,note:n}]);addNote(`${N(a)} spent from your ${getWallet(w).name} wallet for ${n}.`);finish(`Logged ${N(a)} from ${getWallet(w).name}.`)}catch(e){fail(e.message)}}});return}
+ if(k==='move'){const wallets=getWallets();sheet('Move money',`<div class="row"><div><label for="w1">From</label>${wsel('w1',p||wallets[0]?.key)}</div><div><label for="w2">To</label>${wsel('w2',wallets.find(w=>w.key!==(p||wallets[0]?.key))?.key||wallets[1]?.key)}</div></div>${amountField}<p class="mu">The protected floor is not a transfer source. Use Release floor for a floor release.</p><button type="button" class="go" id="go">Move money</button>`,()=>{$('#go').onclick=()=>{try{const a=readAmount(),f=$('#w1').value,t=$('#w2').value,{b}=calc();if(f===t)throw new Error('Choose two different wallets.');if(a>b[f])throw new Error(`${getWallet(f).name} has only ${N(b[f])}.`);addLedger([{type:'move',bucket:f,amount:-a,note:'to '+getWallet(t).name},{type:'move',bucket:t,amount:a,note:'from '+getWallet(f).name}]);addNote(`${N(a)} moved from ${getWallet(f).name} to ${getWallet(t).name}.`);finish(`Moved ${N(a)} from ${getWallet(f).name} to ${getWallet(t).name}.`)}catch(e){fail(e.message)}}});return}
+ if(k==='addwallet'){sheet('Create new wallet',`<label for="wn">Wallet name</label><input id="wn" maxlength="30" placeholder="e.g. Savings, Rent, Fun" required><label for="wi">Icon</label><select id="wi">${WALLET_ICONS.map(i=>`<option value="${i}">${i.replace(/-/g,' ')}</option>`).join('')}</select><button type="button" class="go" id="go">Create wallet</button>`,()=>{$('#go').onclick=()=>{try{const name=$('#wn').value.trim();if(!name)throw new Error('Enter a name for the wallet.');const icon=$('#wi').value||'wallet';const key=name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||uid();if(getWallets().some(w=>w.key===key))throw new Error('A wallet with a similar name already exists.');state.wallets=getWallets();state.wallets.push({key,name,icon});persist();closeSheet();toast(`Wallet “${name}” created.`);setTimeout(()=>actionForm('move',key),300)}catch(e){fail(e.message)}}});return}
+ if(k==='manage'){const w=getWallet(p);sheet('Manage '+w.name,`<label for="rn">Rename</label><input id="rn" maxlength="30" value="${esc(w.name)}"><label for="ri">Change icon</label><select id="ri">${WALLET_ICONS.map(i=>`<option value="${i}" ${i===w.icon?'selected':''}>${i.replace(/-/g,' ')}</option>`).join('')}</select><label for="bud">Monthly budget (₦, optional)</label><input id="bud" type="number" min="0" step="1" value="${getBudget(p)||''}" placeholder="0 = no budget"><div class="row"><button type="button" class="go" id="saveM">Save changes</button></div><button type="button" class="go danger" id="delM">Delete wallet</button>`,()=>{$('#saveM').onclick=()=>{try{const name=$('#rn').value.trim();if(!name)throw new Error('Name cannot be empty.');const icon=$('#ri').value;const bud=Number($('#bud').value)||0;if(bud<0)throw new Error('Budget cannot be negative.');const idx=state.wallets.findIndex(x=>x.key===p);if(idx>=0){state.wallets[idx].name=name;state.wallets[idx].icon=icon}if(!state.budgets)state.budgets={};if(bud>0)state.budgets[p]=bud;else delete state.budgets[p];finish('Wallet updated.')}catch(e){fail(e.message)}};$('#delM').onclick=()=>{if(!confirm(`Delete “${w.name}”? Its history stays, but the wallet will be removed from the list.`))return;state.wallets=state.wallets.filter(x=>x.key!==p);if(state.budgets)delete state.budgets[p];if(wd===p)wd=null;finish('Wallet deleted.')}});return}
+ if(k==='rel'){sheet('Release floor',`<p class="mu">Floor releases are for essential needs such as food, shelter, or medical expenses. Your balance stays unchanged while the request is waiting. In personal mode, you can approve an eligible request after its waiting period.</p>${amountField}<label for="r">Reason</label><select id="r"><option>Food</option><option>Shelter</option><option>Medical</option><option>Other</option></select><label for="n">Describe the need</label><input id="n" maxlength="80" placeholder="Briefly explain the expense"><button type="button" class="go" id="go">Request release</button>`,()=>{$('#go').onclick=()=>{try{const a=readAmount(),reason=$('#r').value,n=$('#n').value.trim(),{b}=calc();if(a>b.floor)throw new Error(`The floor holds only ${N(b.floor)}.`);if(!n)throw new Error('Describe why you need the release.');const blocked=reason==='Other'||BAD.test(n),t=Date.now(),r={id:uid(),amount:a,reason,note:n,createdAt:t,releaseAt:t+Math.max(0,Number(state.cfg.waitHours)||0)*36e5,status:blocked?'blocked':'waiting'};state.requests.unshift(r);addNote(blocked?`Your floor release request for ${N(a)} was blocked. Use an eligible essential-expense reason.`:`Your floor release request for ${N(a)} was recorded. It is waiting for approval; your floor has not changed.`);if(blocked){persist();render();closeSheet();toast('Request blocked by the floor rules.')}else finish('Release request recorded.')}catch(e){fail(e.message)}}});return}
+ if(k==='count'){sheet('Compare with Spenda',`<p class="mu">Enter the current available Spenda balance. This check records the difference but does not silently rewrite your transaction history or wallet allocations.</p><label for="a">Current Spenda balance (₦)</label><input id="a" type="number" min="0" step="1" inputmode="numeric" placeholder="0"><button type="button" class="go" id="go">Compare totals</button>`,()=>{$('#go').onclick=()=>{try{const raw=$('#a').value;if(raw===''||!Number.isSafeInteger(Number(raw))||Number(raw)<0)throw new Error('Enter a valid total of zero or more.');const{total}=calc(),diff=Number(raw)-total,msg=diff===0?'Reconciled: your actual total matches the ledger.':diff<0?`Reconciliation: ${N(-diff)} less than the ledger is in your actual accounts.`:`Reconciliation: your actual accounts contain ${N(diff)} more than the ledger.`;addNote(msg);finish(msg)}catch(e){fail(e.message)}}});return}
+ if(k==='set'){const c=state.cfg,shares=walletShares(c.splits);sheet('Floor settings',`<label for="s_bb">Bare-bones cost per day (₦)</label><input id="s_bb" type="number" min="1" step="1" value="${c.bareBones}"><div class="row"><div><label for="s_td">Floor target (days)</label><input id="s_td" type="number" min="7" step="1" value="${c.targetDays}"></div><div><label for="s_fp">Floor allocation (%) · minimum 10%</label><input id="s_fp" type="number" min="10" max="100" step="1" value="${Math.max(10,c.floorPct)}"></div></div><label for="s_wh">Release waiting period (hours)</label><input id="s_wh" type="number" min="0" step="0.5" value="${c.waitHours}"><p class="mu">When the floor target is reached, the cap can reduce further floor allocations; the configured rate itself cannot be set below 10%.</p><label>Wallet split of the amount left after the floor (must total 100%)</label>${getWallets().map(w=>`<div class="row" style="align-items:center;margin-top:7px"><div class="g"><b>${esc(w.name)}</b><small>Share of remainder</small></div><div style="max-width:110px"><input id="s_${esc(w.key)}" type="number" min="0" max="100" step="1" value="${Math.round(shares[w.key]||0)}" aria-label="${esc(w.name)} share percentage"></div></div>`).join('')}<label style="display:flex;gap:8px;align-items:center;color:var(--tx)"><input id="s_solo" type="checkbox" ${c.solo?'checked':''}> Allow personal approval of my own eligible floor releases</label><p class="subtle">This is a personal tracker, not independent financial approval. Keep the waiting period if you want a pause before releasing protected money.</p><button type="button" class="go" id="go">Save settings</button>`,()=>{$('#go').onclick=()=>{try{const bareBones=Number($('#s_bb').value),targetDays=Number($('#s_td').value),floorPct=Number($('#s_fp').value),waitHours=Number($('#s_wh').value),splits={};getWallets().forEach(w=>splits[w.key]=Number($('#s_'+w.key).value));if(!Number.isSafeInteger(bareBones)||bareBones<=0)throw new Error('Daily cost must be a positive whole naira amount.');if(!Number.isSafeInteger(targetDays)||targetDays<7||targetDays>3650)throw new Error('Target days must be between 7 and 3650.');if(!Number.isSafeInteger(floorPct)||floorPct<10||floorPct>100)throw new Error('Floor allocation must be between 10 and 100.');if(!Number.isFinite(waitHours)||waitHours<0||waitHours>8760)throw new Error('Waiting period must be between 0 and 8760 hours.');if(getWallets().some(w=>!Number.isSafeInteger(splits[w.key])||splits[w.key]<0||splits[w.key]>100)||getWallets().reduce((sum,w)=>sum+splits[w.key],0)!==100)throw new Error('Wallet splits must be whole percentages that add up to exactly 100.');state.cfg={...state.cfg,bareBones,targetDays,floorPct,waitHours,splits,solo:$('#s_solo').checked};addNote('Your financial floor settings were updated.');finish('Settings saved.')}catch(e){fail(e.message)}}});return}
+ if(k==='export'){exportBackup();return}
+ if(k==='import'){importBackup();return}
+ if(k==='resetbalance'){sheet('Reset balances to zero',`<div class="warn">This clears the financial ledger and pending wallet reviews on this device. It keeps your profile, wallet names, budgets and allocation settings. Existing Spenda notifications in Supabase are not deleted and will not be counted until you set a new opening balance.</div><p class="mu">Export a backup first if you may need the current history later. After resetting, the total will be ₦0 and automatic transaction processing will pause until you enter the current Spenda balance again.</p><label for="confirmResetBalance">Type RESET to confirm</label><input id="confirmResetBalance" autocomplete="off"><button type="button" class="go danger" id="go">Reset balances</button>`,()=>{$('#go').onclick=()=>{if($('#confirmResetBalance').value!=='RESET'){fail('Type RESET exactly to confirm.');return}try{state.ledger=[];state.requests=[];state.notes=[];state.trackingStartedAt=null;state.openingBalance=null;state.heldImportIds=[];persist();closeSheet();view='home';wd=null;render();toast('Balances reset to zero. Set your current Spenda balance to restart tracking.')}catch(e){fail(e.message)}}});return}
+ if(k==='reset'){sheet('Reset app data',`<div class="warn">This permanently deletes the financial data saved by this app in this browser. Export a backup first if you may need it later.</div><label for="confirmReset">Type RESET to confirm</label><input id="confirmReset" autocomplete="off"><button type="button" class="go" id="go">Delete local data</button>`,()=>{$('#go').onclick=()=>{if($('#confirmReset').value!=='RESET'){fail('Type RESET exactly to confirm.');return}try{localStorage.removeItem(STORAGE_KEY);localStorage.removeItem(WELCOME_CONFIRMED_KEY);state=freshState();state.trackingStartedAt=null;state.openingBalance=null;localStorage.setItem(FRESH_START_KEY,'1');view='home';wd=null;sel=null;editingProfile=false;confirmProfileOnThisVersion=false;closeSheet();render();toast('App data reset. Set up your profile and starting Spenda balance.')}catch(e){fail(e.message)}}});return}
+}
+function notifs(){const unread=state.notes.filter(n=>!n.read).length;sheet('Notifications',`<div class="row" style="align-items:center;margin:8px 0 3px"><span class="mu">${unread} unread</span>${unread?'<button type="button" class="go s" style="margin:0" id="ma">Mark all as read</button>':''}</div>${state.notes.slice(0,50).map(n=>`<button type="button" class="nt ${n.read?'':'u'}" data-r="${n.id}"><span class="d"></span><span>${esc(n.text)}<br><small class="mu">${when(n.t)}</small></span></button>`).join('')||'<div class="empty">No notifications yet. They will appear after financial activity.</div>'}`,()=>{const b=$('#ma');if(b)b.onclick=()=>{state.notes.forEach(n=>n.read=true);persist();notifs();render()}})}
+function exportBackup(){const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='financial-floor-backup-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);toast('Backup exported.')}
+function importBackup(){sheet('Import backup',`<p class="mu">Choose a JSON backup previously exported by Financial Floor. Importing replaces the data currently stored in this browser.</p><label for="backupFile">Backup file</label><input id="backupFile" type="file" accept="application/json,.json"><button type="button" class="go" id="go">Import data</button>`,()=>{$('#go').onclick=async()=>{try{const file=$('#backupFile').files?.[0];if(!file)throw new Error('Choose a backup file first.');const data=JSON.parse(await file.text());if(!data||!Array.isArray(data.ledger)||!Array.isArray(data.notes)||!Array.isArray(data.requests)||!data.cfg)throw new Error('This does not look like a valid Financial Floor backup.');state={...freshState(),...data,profile:data.profile||null,wallets:data.wallets||DEFAULT_WALLETS,budgets:data.budgets||{},cfg:{...DEFAULT_CFG,...data.cfg,splits:{...DEFAULT_CFG.splits,...(data.cfg.splits||{})}},ledger:data.ledger,notes:data.notes,requests:data.requests};persist();view='home';wd=null;closeSheet();render();toast('Backup imported.')}catch(e){fail(e.message)}}})}
+document.addEventListener('click',e=>{const c=s=>e.target.closest(s);let x;if(c('#eye')){hide=!hide;saveHide();render()}else if(x=c('[data-v]')){view=x.dataset.v;wd=null;render();window.scrollTo(0,0)}else if(x=c('[data-w]')){view='wallets';wd=x.dataset.w||null;render();window.scrollTo(0,0)}else if(x=c('[data-ms]')){sel=Number(x.dataset.ms);view='home';wd=null;render()}else if(x=c('[data-f]')){filt=x.dataset.f;render()}else if(c('[data-n]'))notifs();else if(x=c('[data-a]'))actionForm(x.dataset.a,x.dataset.p);else if(x=c('[data-review-tx]'))reviewImportedTransaction(x.dataset.reviewTx);else if(x=c('[data-r]')){const n=state.notes.find(n=>n.id===x.dataset.r);if(n)n.read=true;persist();notifs();render()}else if(x=c('[data-act]')){const r=state.requests.find(r=>r.id===x.dataset.id);if(!r||r.status!=='waiting')return;if(x.dataset.act==='approved'&&Date.now()<r.releaseAt){toast('This request is still within its waiting period.');return}if(x.dataset.act==='approved'&&r.amount>calc().b.floor){toast('The floor no longer has enough money to approve this request.');return}const labels={approved:'approved',denied:'denied',cancelled:'cancelled'};r.status=x.dataset.act;r.decidedAt=Date.now();if(r.status==='approved'){addLedger([{type:'release',bucket:'floor',amount:-r.amount,note:r.reason+(r.note?': '+r.note:'')}])}addNote(`Your floor release request of ${N(r.amount)} was ${labels[r.status]}.`);try{persist();render();toast(`Release request ${labels[r.status]}.`)}catch(err){toast(err.message)}}else if(c('[data-edit-profile]')){editingProfile=true;render();const input=$('#nm');if(input){input.focus();input.select()}}else if(c('[data-theme-toggle]')){theme=theme==='dark'?'light':'dark';try{localStorage.setItem(THEME_KEY,theme)}catch(err){}document.documentElement.setAttribute('data-theme',theme);render()}});
+document.addEventListener('change',e=>{if(e.target.id!=='pic')return;const input=e.target,file=input.files&&input.files[0];if(!file)return;if(file.size>1.5*1024*1024){toast('Please choose an image under 1.5 MB.');input.value='';return}const reader=new FileReader();reader.onload=()=>{const preview=$('#picPrev');if(preview){preview.src=reader.result;preview.style.display='block'}window._pendingPicture=reader.result};reader.readAsDataURL(file)});
+document.addEventListener('submit',e=>{if(e.target.id==='authRegisterForm'){e.preventDefault();void startAuthRegistration();return}if(e.target.id==='verifyEmailForm'){e.preventDefault();void verifyEmailOtp();return}if(e.target.id==='verifyPhoneForm'){e.preventDefault();void verifyPhoneOtp();return}if(e.target.id==='welcomeForm'){e.preventDefault();const name=$('#nm').value.trim();const email=$('#em').value.trim();const phone=$('#ph').value.trim();const dob=$('#dob').value;const st=$('#st').value;const address=$('#ad').value.trim();const source=$('#so').value;const salary=$('#sr').value;if(!name||!email||!phone||!dob||!st||!address||!source||!salary){toast('Please fill in all required fields.');return}const picture=window._pendingPicture||state.profile?.picture||'';state.profile={name,email,phone,dob,state:st,address,sourceOfIncome:source,salaryRange:salary,picture};try{persist();editingProfile=false;confirmProfileOnThisVersion=false;try{localStorage.setItem(WELCOME_CONFIRMED_KEY,'1')}catch(_){}delete window._pendingPicture;view='home';render();toast('Profile saved.');}catch(err){toast(err.message)}}});
+document.addEventListener('click',e=>{if(e.target.closest('#resendEmailOtp')){void resendAuthCode('email');return}if(e.target.closest('#resendPhoneOtp')){void resendAuthCode('phone');return}if(e.target.closest('#restartAuth')){authStage='register';authMessage='';authBusy=false;render();return}if(e.target.closest('#authRetry')){authMessage='';void bootAuth();return}});
+document.addEventListener('click',e=>{if(e.target.closest('#cancelProfileEdit')){editingProfile=false;confirmProfileOnThisVersion=false;delete window._pendingPicture;view='profile';render();return}});
+window.addEventListener('storage',e=>{if(e.key===STORAGE_KEY){state=loadState();render()}});
+setInterval(()=>{if(!modalKind&&state.profile?.name){render()}},60000);
+setInterval(()=>{if(authReady&&authStage==='ready'&&document.visibilityState==='visible')loadImported()},20000);
+const balanceMaskObserver=new MutationObserver(()=>{if(hide)applyBalanceVisibility(document.body)});
+balanceMaskObserver.observe(document.body,{subtree:true,childList:true,characterData:true});
+try {
+  void localStorage.getItem(STORAGE_KEY);
+  render();
+  void bootAuth().then(()=>{if(authStage==='ready')loadImported()});
+} catch (e) {
+  console.error(e);
+  document.getElementById('app').innerHTML = '<div class="c"><h1>Something went wrong</h1><p class="mu">Check the console for details.</p></div>';
+}
+document.addEventListener('click', e => {
+  if (e.target.id === 'refreshImported') loadImported();
+});
+</script>
+</body>
+</html>
